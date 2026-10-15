@@ -1,14 +1,17 @@
 plugins {
 	id("mod-platform")
 	id("dev.kikugie.loom-back-compat")
+	id("com.gradleup.shadow")
 }
 
 // NightConfig (TOML) is shipped by NeoForge/FML but not by Fabric Loader, so on Fabric it is
-// declared and jar-included. LGPL-3.0; see licenses/night-config.txt.
+// shaded into the mod jar under a private package. LGPL-3.0; see licenses/night-config.txt.
 val nightConfig = "com.electronwill.night-config:toml:3.9.0"
+val nightConfigShaded by configurations.creating
 
 platform {
 	loader = "fabric"
+	jarTask.set("shadowJar")
 	dependencies {
 		required("minecraft") {
 			fabricLikeVersionRange = prop("deps.minecraft")
@@ -66,7 +69,19 @@ dependencies {
 	modImplementation("net.fabricmc:fabric-loader:${prop("deps.fabric-loader")}")
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${prop("deps.fabric-api")}")
 	modLocalRuntime("com.terraformersmc:modmenu:${prop("deps.modmenu")}")
-	// Jar-in-jar (META-INF/jars) so the players have the TOML library without another mod providing it.
 	implementation(nightConfig)
-	include(nightConfig)
+	add(nightConfigShaded.name, nightConfig)
 }
+
+// Relocate the TOML library into the mod's own namespace so it cannot clash with another Fabric
+// mod shipping a different NightConfig, and so nothing is nested in META-INF/jars.
+tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+	configurations = listOf(nightConfigShaded)
+	relocate("com.electronwill.nightconfig", "DividedChunks.libraries.electronwill.nightconfig")
+	mergeServiceFiles()
+	archiveClassifier.set("")
+}
+
+// The shaded jar replaces the plain one as the mod's artifact.
+tasks.named("jar") { enabled = false }
+tasks.named("assemble") { dependsOn(tasks.named("shadowJar")) }

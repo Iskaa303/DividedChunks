@@ -126,12 +126,12 @@ implemented by mixin-injected interfaces on vanilla classes, exactly like the va
 
 - Config is TOML (`config/dividedchunks.toml`) via **NightConfig 3.9.0**, with hardcoded English
   comments (never localized) and no enable switch.
-- NeoForge/FML already provides NightConfig; NeoForge builds use that copy. Fabric Loader does not,
-  so the Fabric jar bundles the library jar-in-jar (`META-INF/jars/toml-3.9.0.jar`).
-- **Distant Horizons comparison:** DH shadow-relocates `com.electronwill.nightconfig` because it
-  bundles the library on NeoForge too, where FML also ships it. We only bundle on Fabric, so plain
-  jar-in-jar is enough for now. If nested-jar classpath conflicts ever appear, the hardening path is
-  the same as DH's: Shadow + namespace relocation.
+- NeoForge/FML already provides NightConfig; NeoForge builds use that copy and keep the original
+  package. Fabric Loader does not provide it, so the Fabric jar shades (Shadow plugin) and relocates
+  the library to `DividedChunks.libraries.electronwill.nightconfig`. No jar-in-jar.
+- **Distant Horizons comparison:** this is DH's Shadow namespace relocation. We only shade on Fabric
+  and let NeoForge use FML's copy, so NeoForge bytecode keeps `com.electronwill.nightconfig` and only
+  the Fabric bytecode is rewritten.
 - License/attribution texts ship in `META-INF/licenses/` (see `licenses/ATTRIBUTIONS.md`).
 
 ## 5. Mixin scope (initial, to be refined per milestone)

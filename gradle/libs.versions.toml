@@ -1,5 +1,6 @@
 [versions]
 stonecutter = "0.9.8"
+shadow = "9.6.1"
 stonecutter-postprocess = "2.1-beta.8"
 mod-publish = "2.1.1"
 loomx = "0.4.1"
@@ -24,6 +25,7 @@ serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-jso
 serialization-toml = { module = "dev.eav.tomlkt:tomlkt", version.ref = "serialization-toml" }
 
 [plugins]
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
 stonecutter = { id = "dev.kikugie.stonecutter", version.ref = "stonecutter" }
 loom-back-compat = { id = "dev.kikugie.loom-back-compat", version.ref = "loomx" }
 neoforged-moddev = { id = "net.neoforged.moddev", version.ref = "neoforge-moddev" }
