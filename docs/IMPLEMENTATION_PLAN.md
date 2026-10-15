@@ -168,8 +168,7 @@ vanilla sources for the methods that still assume dense sections.
   - Built-in scene/environment: `minecraft:empty` structure + `minecraft:default`
     environment, so no NBT templates have to be authored.
   - Run configurations for the game test server are added per loader.
-  - GameTests are introduced with the first in-game behaviour (F1), not before: F0 has no
-    world interaction to assert.
+  - GameTests are introduced with the first in-game behaviour (F1c), not before.
 - **In-game manual verification** per milestone: run `:26.3-neoforge:runClient` (and
   `:26.1.2-fabric` when convenient), read `run/logs/latest.log`, exercise the feature, then
   hand to the user.
@@ -178,28 +177,26 @@ vanilla sources for the methods that still assume dense sections.
 ## 7. Milestones (feature-by-feature; each is committed by the user before the next)
 
 Approved order: **vanilla-compat world generation first**, cubic terrain generation
-later. F0–F6 are the core; F7 uses the vanilla generator wrapped into a band.
+later.
 
-- **F0 — Foundations.** Config file (TOML via NightConfig, hardcoded English comments, no
-  enable switch — cubic-vs-vanilla and conversion are a much later concern); coordinate/position
-  math (`CubePos`, `Coords`); test source set + JUnit; startup logging that proves the config
-  loaded. Public interfaces are introduced only when a mixin first needs them (KISS). No
-  vanilla behaviour change yet.
-- **F1 — Height range override.** Mixin `LevelHeightAccessor`/`Level` so a dimension can
-  report a configured (very large) min/max Y, with all range checks bounds-driven.
-  Companion: the in-game GameTest harness lands here, with the first real assertion.
-  Verification: `/setblock` above vanilla build height is accepted; no dense allocation.
-- **F2 — Sparse column storage.** Replace `LevelChunk`'s dense section array with the
-  sparse `SectionStorage`; patch every vanilla accessor. Verification: place/read/harvest
-  a block at a high Y, chunk unload/reload in memory keeps it.
-- **F3 — Storage format.** Persist arbitrary-Y cubes to disk and read them back.
-- **F4 — Network + client.** Cube packets + client cube cache + rendering at high Y.
-- **F5 — Lighting.** Cubic sky light + occlusion shadow map (+ configurable cone).
-- **F6 — Loading/tickets.** 3D view distance, vertical loading, unload GC.
-- **F7 — World generation.** Cubic terrain (or vanilla-compat generator wrapped to fill
-  a band) — see Q4.
-- **F8 — Entities/structures/biomes/spawn** at arbitrary Y.
-- **F9 — Compatibility & API polish.** Events, optional-mod hooks, docs for the API.
+- **F0 — Foundations.** Config (TOML/NightConfig), coordinate math (`Coords`, `CubePos`),
+  JUnit test harness, startup logging. *(done)*
+- **F1 — Sparse column storage.** Replace the dense `LevelChunkSection[]` with `ColumnStorage`,
+  keeping vanilla height, so behaviour is unchanged. Split into reviewable halves:
+  - **F1a** — `ColumnStorage<T>` primitive + unit tests. *(done)*
+  - **F1b** — Swap the backing store behind `ChunkAccess`/`LevelChunk`/`ProtoChunk`; the 10
+    direct `sections` sites plus `getSection`/`getSections`/`getHighestFilledSectionIndex` route
+    through `ColumnStorage`; `getSections()` returns a compatibility view. Behaviour-preserving.
+  - **F1c** — Widen `LevelHeightAccessor`/`Level` to the configured range and make block get/set
+    work at any Y on the server (verify with `/setblock` + `/data`). Client, light and rendering
+    stay on the vanilla band until F3. First in-game GameTest lives here.
+- **F2 — Storage format.** Persist arbitrary-Y cubes to disk and read them back.
+- **F3 — Network + client.** Cube packets + client cube cache + rendering at high Y.
+- **F4 — Lighting.** Cubic sky light + occlusion shadow map (+ configurable cone).
+- **F5 — Loading/tickets.** 3D view distance, vertical loading, unload GC.
+- **F6 — World generation.** Vanilla-compat generator wrapped into a band (cubic terrain later).
+- **F7 — Entities/structures/biomes/spawn** at arbitrary Y.
+- **F8 — Compatibility & API polish.** Events, optional-mod hooks, docs for the API.
 
 ## 8. Risks
 
