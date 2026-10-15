@@ -4,19 +4,19 @@ loomx.loom_version = "1.18.4"
 id = "dividedchunks"
 name = "DividedChunks"
 group = "net.iskaa303"
-version = "0.0.1-dev"
+version = "0.0.1"
 channel_tag = ""
-description = ""
-authors = ["iskaa303"]
+description = "A 'simple' mod that makes chunks *cubic* or *divided*."
+authors = ["Iskaa303"]
 contributors = []
 inception_year = "2026"
 license.name = "OSL-3.0"
 license.url = "https://opensource.org/license/osl-3-0"
 license.dist = "repo"
 environment = "client_and_server"
-sources_url = ""
+sources_url = "https://github.com/Iskaa303/DividedChunks"
 homepage_url = ""
-issues_url = ""
+issues_url = "https://github.com/Iskaa303/DividedChunks/issues"
 discord_url = ""
 dev_jvm_args = [
 	"-XX:+IgnoreUnrecognizedVMOptions",
@@ -25,11 +25,10 @@ dev_jvm_args = [
 
 [[mod.pom.developers]]
 id = "iskaa303"
-name = "iskaa303"
+name = "Iskaa303"
 
 [fabric]
 deps.fabric-loader = "0.19.5"
-# deps.modmenu is a dev-only runtime dependency (see build.fabric.gradle.kts), not in the manifest
 
 [fabric."26.1.2"]
 deps.minecraft = "26.1.2"
