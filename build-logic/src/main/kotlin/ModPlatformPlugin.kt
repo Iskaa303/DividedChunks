@@ -152,10 +152,20 @@ abstract class ModPlatformPlugin @Inject constructor() : Plugin<Project> {
 	private fun Project.configureProcessResources(ctx: Context) {
 		val javaVersionValue = "JAVA_${ctx.javaVersion.majorVersion}"
 		val excluded = ctx.loader.excludedResources
+		// The tree holds one access file per Minecraft version; keep them all out and add back only
+		// this version's, in the format the current loader reads.
+		val accessFile = "${ctx.currentMcVersion}." + if (ctx.loader.isFabricLike) "accesswidener" else "cfg"
+		the<JavaPluginExtension>().sourceSets.named("main") {
+			resources.exclude("aw/*")
+		}
 		tasks.named<ProcessResources>("processResources") {
 			dependsOn(tasks.named("stonecutterGenerate"), "kspKotlin")
 			// Ship license/attribution texts for anything bundled (e.g. NightConfig on Fabric).
 			from(rootProject.file("licenses")) { into("META-INF/licenses") }
+			from(rootProject.file("src/main/resources/aw")) {
+				include(accessFile)
+				into("aw")
+			}
 			filesMatching("*.mixins.json") {
 				expand("java" to javaVersionValue)
 			}
