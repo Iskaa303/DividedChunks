@@ -39,8 +39,16 @@ loom {
 	}
 }
 
+fabricApi {
+	configureDataGeneration {
+		outputDirectory = file("${rootDir}/versions/datagen/${sc.current.version}/src/main/generated")
+		client = true
+	}
+}
+
 repositories {
 	mavenCentral()
+	strictMaven("https://maven.terraformersmc.com/", "com.terraformersmc") { name = "TerraformersMC" }
 }
 
 configurations.all {
@@ -53,4 +61,7 @@ dependencies {
 	minecraft("com.mojang:minecraft:${prop("deps.minecraft")}")
 	modImplementation("net.fabricmc:fabric-loader:${prop("deps.fabric-loader")}")
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${prop("deps.fabric-api")}")
+	// Dev-only: Mod Menu gives Fabric a mods list screen (NeoForge has one built in). It is not written
+	// into the generated fabric.mod.json, so it stays a local convenience dependency.
+	modLocalRuntime("com.terraformersmc:modmenu:${prop("deps.modmenu")}")
 }

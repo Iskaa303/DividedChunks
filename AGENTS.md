@@ -30,8 +30,8 @@ one shared source tree, six Gradle projects, two loaders × three Minecraft vers
   unless the user is debugging runtime settings; check `run/logs/latest.log` instead.
 * Generated/ignored: `build/`, `versions/*/build/`, `.gradle/`, `.gradle-home/`, `.devenv/`,
   `devenv.lock`. Never hand-edit build output, generated manifests, or cache contents.
-* **Do not re-add what was deliberately removed**: Forge/legacy-forge, more Minecraft versions,
-  datagen, ModMenu. Ask first if a task seems to need one.
+* **Do not re-add what was deliberately removed**: Forge/legacy-forge, more Minecraft versions. Ask
+  first if a task seems to need one. (Datagen and Mod Menu are already wired up — see below.)
 * **Never publish or release**: don't run `publishMods` / `publishGithub` / `publishModrinth` /
   `publishCurseforge` (they upload), don't push or delete tags, and don't edit `.github/workflows/`,
   `cliff.toml`, `CHANGELOG.md` or the publishing logic in `build-logic/` unless the user asks for it.
@@ -148,6 +148,35 @@ Currently only `PUB_GITHUB_ENABLE=true` and `PUB_DRY_RUN=false` are configured; 
 Maven Central are deliberately unconfigured (no project ids/tokens), and with nothing enabled the
 per-platform `publishMods` tasks stay a no-op dry run.
 
+## Data generation (Fabric datagen)
+
+Datagen uses fabric-api and writes into per-version, committed directories:
+
+```bash
+./gradlew :26.3-fabric:runDatagen      # -> versions/datagen/26.3/src/main/generated/
+```
+
+* Providers are registered in
+  `net.iskaa303.dividedchunks.platform.fabric.datagen.FabricDataGeneratorEntrypoint` via `pack.addProvider(...)`
+  (it registers none right now, so a run is a no-op).
+* The fabric manifest in `build-logic` declares that class as the `fabric-datagen` entrypoint, so the
+  class and its entry in `Loader.kt` must both exist.
+* `build.fabric.gradle.kts` points `fabricApi.configureDataGeneration` at
+  `versions/datagen/<mcver>/src/main/generated` (`client = true`), and `build.neoforge.gradle.kts` adds
+  the same directory as an extra resource source dir — generated data ships on both loaders, but only
+  Fabric can generate it.
+* Output is per Minecraft version and meant to be committed; `.gitkeep` files keep the empty dirs.
+
+## Mod Menu (Fabric dev client only)
+
+`build.fabric.gradle.kts` pulls `com.terraformersmc:modmenu` from the TerraformersMC Maven as
+`modLocalRuntime`, with the version pinned per Minecraft version through `deps.modmenu` in
+`stonecutter.properties.toml` (18.0.2 / 20.0.3 / 21.0.0 for 26.1.2 / 26.2 / 26.3). It is deliberately
+**not** a declared dependency: it never appears in `fabric.mod.json` and is not shipped — it only gives
+the Fabric dev client a mods list screen (NeoForge has one built in). Bump it by picking the Mod Menu
+release that lists the Minecraft version (`https://maven.terraformersmc.com/releases/com/terraformersmc/modmenu/`
+or the Mod Menu page on Modrinth/CurseForge).
+
 ## Writing code
 
 Shared code goes in `net.iskaa303.dividedchunks`, loader-specific code in
@@ -174,6 +203,13 @@ in the [Stonecutter wiki v2](https://stonecutter.kikugie.dev/wiki/v2/) and the
 [multiloader guide](https://stonecutter.kikugie.dev/wiki/tips/multiloader) — check there instead of
 inventing syntax. Note that version expressions are evaluated on the version string
 (`sc.current.parsed`), so a full `./gradlew build` is the real check that all six variants compile.
+
+The **active** version in `.sc_active_version` is compiled straight from the raw files in `src/`,
+while every other version is compiled from Stonecutter's processed copies in
+`versions/<ver>/build/generated/stonecutter/main/java/`. So a new file with guards must be written in
+the *active* version's comment state (match the arrangement of a neighbouring file, or diff against
+that generated directory) — otherwise the active version's build fails on code that the other five
+versions would compile fine.
 
 ### 26.x API notes (verified here, but confirm against the real jars)
 
