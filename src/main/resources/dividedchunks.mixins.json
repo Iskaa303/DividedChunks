@@ -10,7 +10,8 @@
     "ChunkAccessMixin",
     "ChunkHolderMixin",
     "LevelChunkMixin",
-    "LevelMixin"
+    "LevelMixin",
+    "MinecraftServerMixin"
   ],
   "client": []
 }

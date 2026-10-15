@@ -6,8 +6,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -72,6 +74,30 @@ class CubeRegionStorageTest {
 			assertFalse(storage.remove(pos));
 			assertTrue(storage.get(pos).isEmpty());
 		}
+	}
+
+	@Test
+	void readsAWholeColumn() {
+		try (CubeRegionStorage storage = new CubeRegionStorage(this.directory)) {
+			storage.put(new CubePos(5, 0, 6), bytes(0));
+			storage.put(new CubePos(5, 1_000_000, 6), bytes(1));
+			storage.put(new CubePos(5, -1_000_000, 6), bytes(2));
+			storage.put(new CubePos(6, 0, 6), bytes(3));
+
+			Map<Integer, byte[]> column = storage.readColumn(5, 6);
+			assertEquals(3, column.size());
+			assertArrayEquals(bytes(0), column.get(0));
+			assertArrayEquals(bytes(1), column.get(1_000_000));
+			assertArrayEquals(bytes(2), column.get(-1_000_000));
+		}
+	}
+
+	@Test
+	void readColumnOfMissingRegionIsEmpty() {
+		try (CubeRegionStorage storage = new CubeRegionStorage(this.directory)) {
+			assertTrue(storage.readColumn(5, 6).isEmpty());
+		}
+		assertFalse(Files.exists(this.directory.resolve("r.0.0.dcr")));
 	}
 
 	@Test

@@ -115,8 +115,14 @@ implemented by mixin-injected interfaces on vanilla classes, exactly like the va
   file.
 - Columns/heights/biomes get their own files later; the format version is the migration
   anchor.
-- Must support reading a vanilla-generated world's base band so an existing world can
-  be lifted into cubic mode without regeneration (conversion path is a later milestone).
+- **Near term (F2, shipped):** vanilla keeps owning the band — `.mca` holds the band sections,
+  heightmaps, block entities and entities — while `.dcr` holds only the sections outside the
+  band. Nothing vanilla writes changes, so a world without out-of-band blocks stays a vanilla
+  world on disk.
+- **Long term (F9):** `.dcr` becomes authoritative for the whole column. Vanilla stops writing
+  sections and the band is serialized into `.dcr` too, and an existing world is converted by
+  reading its `.mca` base band into `.dcr` without regeneration. Heightmaps, light and block
+  entities have to move with the blocks.
 
 ### 4.6 Network
 - Vanilla sends whole columns including every section in the build range; that is
@@ -208,20 +214,29 @@ later.
     unit tests, with the `test` source set folded into the main mod for dev runs and per-loader
     `runGameTestServer` configurations. The first test writes a block at y=+1,000,000 and reads it
     back; verified passing on NeoForge and Fabric. *(done)*
-- **F2 — Storage format.** Persist arbitrary-Y cubes to disk and read them back. Split:
+- **F2 — Storage format.** Persist arbitrary-Y cubes to disk and read them back. *(done)* Split:
   - **F2a** — `core.storage.CubeStorage` + `CubeRegionStorage`: the custom
     `r.<rx>.<rz>.dcr` region format (zlib records keyed by `(chunkX, sectionY, chunkZ)`,
     CRC32, index rebuild on open, truncation recovery, compaction). JUnit tests cover
     store/read/remove/reopen, region routing, extreme coordinates, corruption and
     compaction. *(done)*
-  - **F2b** — Encode a `LevelChunkSection` to bytes and wire it: write the cube when a block is set
-    outside the vanilla band, and read the stored cubes back into the column when the chunk loads.
+  - **F2b** — `core.world.SectionCodec` (name-based section NBT) + `CubeStores` (one store per
+    dimension under `<world>/dividedchunks/<namespace>/<path>`, closed when the server stops),
+    wired into `LevelChunkMixin`: a stored column is loaded lazily on the first out-of-band
+    access and each changed section is written back on set (removed when it becomes air).
+    Verified on the 26.3 NeoForge dev server: a block at y=1,000,000 survived a full restart.
+    *(done)*
 - **F3 — Network + client.** Cube packets + client cube cache + rendering at high Y.
 - **F4 — Lighting.** Cubic sky light + occlusion shadow map (+ configurable cone).
 - **F5 — Loading/tickets.** 3D view distance, vertical loading, unload GC.
 - **F6 — World generation.** Vanilla-compat generator wrapped into a band (cubic terrain later).
 - **F7 — Entities/structures/biomes/spawn** at arbitrary Y.
 - **F8 — Compatibility & API polish.** Events, optional-mod hooks, docs for the API.
+- **F9 — Full-column storage & `.mca`→`.dcr` conversion.** Take the whole column over: vanilla
+  stops serializing sections and the band is read/written through `.dcr` like every other
+  section, then import an existing `.mca` base band into `.dcr` so a vanilla world becomes
+  cubic in place (no regeneration). Built on the F2 region format, so this is a serialization
+  change, not a new storage format.
 
 ## 8. Risks
 
@@ -244,7 +259,8 @@ later.
    `getMaxY() - getMinY()` overflows int, so height must never be derived by int subtraction; use
    long or a sentinel.
 2. **Storage:** **custom region files with zlib**, no embedded database and no native
-   dependency. Height configurable, default 30M.
+   dependency. Height configurable, default 30M. F2 ships it as a delta alongside vanilla
+   `.mca`; F9 grows it to own the whole column and convert existing worlds.
 3. **Lighting:** **angled sky cone**, configurable per dimension. Occlusion-aware shadow
    map over the full column; persisted for unloaded columns; a fully closed column blocks
    all sky light.

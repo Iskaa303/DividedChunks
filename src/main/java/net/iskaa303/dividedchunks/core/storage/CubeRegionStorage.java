@@ -78,6 +78,22 @@ public final class CubeRegionStorage implements CubeStorage {
 		}
 	}
 
+	/** Every stored section of one chunk column, keyed by section Y. */
+	public synchronized Map<Integer, byte[]> readColumn(int chunkX, int chunkZ) {
+		int regionX = Math.floorDiv(chunkX, CubeRegionFile.REGION_SIZE);
+		int regionZ = Math.floorDiv(chunkZ, CubeRegionFile.REGION_SIZE);
+		long key = key(regionX, regionZ);
+		CubeRegionFile region = this.open.get(key);
+		if (region == null) {
+			Path file = fileFor(regionX, regionZ);
+			if (!Files.exists(file)) {
+				return Map.of();
+			}
+			region = openRegion(key, regionX, regionZ, file);
+		}
+		return region.readColumn(chunkX, chunkZ);
+	}
+
 	@Override
 	public synchronized void close() {
 		for (CubeRegionFile region : this.open.values()) {
