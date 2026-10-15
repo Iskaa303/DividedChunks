@@ -58,4 +58,4 @@ bin/
 !.idea/runConfigurations/Run_Active_Server.xml
 .gradle-home/
 .devenv/
-versions/*/run/
+versions/

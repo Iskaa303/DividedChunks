@@ -69,6 +69,17 @@ javap -p -c -classpath .gradle/loom-cache/minecraftMaven/net/minecraft/minecraft
 jar tf .gradle-home/caches/neoformruntime/intermediate_results/mergeWithSources_*_output.jar | grep '\.java$' | head
 ```
 
+### Tests and reports
+
+```bash
+./gradlew test                    # all versions;  HTML: versions/<mc>-<loader>/build/reports/tests/test/index.html
+./gradlew :26.3-neoforge:test     # one version
+./gradlew javadoc                 # all versions;  HTML: versions/<mc>-<loader>/build/docs/javadoc/index.html
+./gradlew :26.3-neoforge:javadoc  # one version
+```
+
+`./gradlew build` runs both. In-game GameTests are documented in `docs/IMPLEMENTATION_PLAN.md`.
+
 ## Credits
 
 The build setup is adapted from
@@ -80,3 +91,10 @@ Its license is kept in `licenses/MOD_TEMPLATE_LICENSE.txt`.
 
 DividedChunks is licensed under the Open Software License 3.0 (`LICENSE.txt`),
 Copyright (c) 2026 Iskaa303.
+
+Third-party licenses and attribution: [`licenses/ATTRIBUTIONS.md`](licenses/ATTRIBUTIONS.md).
+
+The cubic-chunks idea comes from
+[OpenCubicChunks/CubicChunks](https://github.com/OpenCubicChunks/CubicChunks) and
+[GTNewHorizons/CubicChunks1710](https://github.com/GTNewHorizons/CubicChunks1710) (both MIT);
+no code from either is used.

@@ -17,6 +17,13 @@ one shared source tree, six Gradle projects, two loaders × three Minecraft vers
 
 ## Ground rules (do not break these)
 
+* **Clean-room code only — never copy code.** Do not copy source, comments, identifiers, data or
+  file structure from any other project, and do not paste code from the internet. In particular the
+  [OpenCubicChunks/CubicChunks](https://github.com/OpenCubicChunks/CubicChunks) and
+  [GTNewHorizons/CubicChunks1710](https://github.com/GTNewHorizons/CubicChunks1710) repositories
+  (and Distant Horizons, and any other mod) may be read for architecture and pitfalls only. Every
+  line written here must be original. Attribution belongs in `licenses/` and `README.md`, never as
+  copied code.
 * **Never touch git.** No `git init`, `git add`, `git commit`, `git checkout`, branch/tag/stash, no
   `.github/` workflows. The user owns the repository; leave changes in the working tree for them.
 * **Never edit `.sc_active_version`** (and never run `Set active project to <v>`, `Refresh active

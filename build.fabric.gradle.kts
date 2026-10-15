@@ -3,6 +3,10 @@ plugins {
 	id("dev.kikugie.loom-back-compat")
 }
 
+// NightConfig (TOML) is shipped by NeoForge/FML but not by Fabric Loader, so on Fabric it is
+// declared and jar-included. LGPL-3.0; see licenses/night-config.txt.
+val nightConfig = "com.electronwill.night-config:toml:3.9.0"
+
 platform {
 	loader = "fabric"
 	dependencies {
@@ -61,7 +65,8 @@ dependencies {
 	minecraft("com.mojang:minecraft:${prop("deps.minecraft")}")
 	modImplementation("net.fabricmc:fabric-loader:${prop("deps.fabric-loader")}")
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${prop("deps.fabric-api")}")
-	// Dev-only: Mod Menu gives Fabric a mods list screen (NeoForge has one built in). It is not written
-	// into the generated fabric.mod.json, so it stays a local convenience dependency.
 	modLocalRuntime("com.terraformersmc:modmenu:${prop("deps.modmenu")}")
+	// Jar-in-jar (META-INF/jars) so the players have the TOML library without another mod providing it.
+	implementation(nightConfig)
+	include(nightConfig)
 }

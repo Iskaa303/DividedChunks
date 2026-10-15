@@ -5,6 +5,7 @@ import org.gradle.api.Project
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Input
@@ -115,6 +116,12 @@ abstract class ModPlatformPlugin @Inject constructor() : Plugin<Project> {
 				languageVersion.set(JavaLanguageVersion.of(ctx.javaVersion.majorVersion))
 			}
 		}
+
+		configurations.named("testCompileClasspath") { extendsFrom(configurations.getByName("compileClasspath")) }
+		configurations.named("testRuntimeClasspath") { extendsFrom(configurations.getByName("runtimeClasspath")) }
+		dependencies.add("testImplementation", "org.junit.jupiter:junit-jupiter:5.11.4")
+		dependencies.add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+		tasks.withType<Test>().configureEach { useJUnitPlatform() }
 	}
 
 	private fun Project.registerGenerateManifestTask(ctx: Context) {
@@ -147,6 +154,8 @@ abstract class ModPlatformPlugin @Inject constructor() : Plugin<Project> {
 		val excluded = ctx.loader.excludedResources
 		tasks.named<ProcessResources>("processResources") {
 			dependsOn(tasks.named("stonecutterGenerate"), "kspKotlin")
+			// Ship license/attribution texts for anything bundled (e.g. NightConfig on Fabric).
+			from(rootProject.file("licenses")) { into("META-INF/licenses") }
 			filesMatching("*.mixins.json") {
 				expand("java" to javaVersionValue)
 			}
