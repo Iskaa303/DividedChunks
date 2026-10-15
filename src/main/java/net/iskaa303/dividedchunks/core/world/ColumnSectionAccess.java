@@ -13,4 +13,7 @@ public interface ColumnSectionAccess {
 
 	/** Stores {@code section} at {@code sectionY}, returning the previous section or {@code null}. */
 	LevelChunkSection dividedchunks$putSection(int sectionY, LevelChunkSection section);
+
+	/** Removes the section at {@code sectionY}, returning the previous section or {@code null}. */
+	LevelChunkSection dividedchunks$removeSection(int sectionY);
 }

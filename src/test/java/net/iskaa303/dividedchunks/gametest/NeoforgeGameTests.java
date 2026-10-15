@@ -20,6 +20,10 @@ public final class NeoforgeGameTests {
 
 	@SubscribeEvent
 	public static void register(RegisterGameTestsEvent event) {
+		// Only the game test server opts in; a normal run must not add an unserializable test_instance.
+		if (!Boolean.getBoolean("dividedchunks.gametest")) {
+			return;
+		}
 		Holder<TestEnvironmentDefinition<?>> environment = event.registerEnvironment(
 				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "gametest"),
 				new TestEnvironmentDefinition.AllOf(List.of()));

@@ -39,6 +39,7 @@ neoForge {
 			type = "gameTestServer"
 			gameDirectory = file("run/")
 			ideName = "NeoForge Game Test (${stonecutter.current.version})"
+			jvmArguments.add("-Ddividedchunks.gametest=true")
 			jvmArguments.addAll(devJvmArgs)
 		}
 	}

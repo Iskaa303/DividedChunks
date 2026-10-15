@@ -11,7 +11,8 @@
     "ChunkHolderMixin",
     "LevelChunkMixin",
     "LevelMixin",
-    "MinecraftServerMixin"
+    "MinecraftServerMixin",
+    "PlayerChunkSenderMixin"
   ],
   "client": []
 }

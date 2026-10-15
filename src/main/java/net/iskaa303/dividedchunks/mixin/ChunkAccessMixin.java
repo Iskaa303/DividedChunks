@@ -70,6 +70,13 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 		return previous;
 	}
 
+	@Override
+	public LevelChunkSection dividedchunks$removeSection(int sectionY) {
+		LevelChunkSection previous = this.dividedchunks$sections.remove(sectionY);
+		this.dividedchunks$sectionView = null;
+		return previous;
+	}
+
 	@Unique
 	private LevelChunkSection[] dividedchunks$sectionView() {
 		LevelChunkSection[] view = this.dividedchunks$sectionView;
