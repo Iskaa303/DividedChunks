@@ -65,7 +65,10 @@ fun Project.configureModPublishing(ctx: Context) {
 		val curseforgeAccessToken = env("PUB_CURSEFORGE_TOKEN")
 
 		val githubEnabled = envTrue("PUB_GITHUB_ENABLE")
-		if (envTrue("PUB_DRY_RUN") || !envTrue("PUB_MODS_ENABLE")) {
+		val modsEnabled = envTrue("PUB_MODS_ENABLE")
+		// PUB_MODS_ENABLE gates Modrinth/CurseForge only; GitHub releases work without it. The task is
+		// only a no-op when nothing at all would be published (or PUB_DRY_RUN forces a simulation).
+		if (envTrue("PUB_DRY_RUN") || (!modsEnabled && !githubEnabled)) {
 			dryRun = true
 		}
 
@@ -96,8 +99,10 @@ fun Project.configureModPublishing(ctx: Context) {
 			}
 		}
 
-		modrinth(ctx, ctx.publishAdditionalVersions, mrStaging, modrinthAccessToken)
-		if (!mrStaging) curseforge(ctx, ctx.publishAdditionalVersions, curseforgeAccessToken)
+		if (modsEnabled) {
+			modrinth(ctx, ctx.publishAdditionalVersions, mrStaging, modrinthAccessToken)
+			if (!mrStaging) curseforge(ctx, ctx.publishAdditionalVersions, curseforgeAccessToken)
+		}
 	}
 }
 

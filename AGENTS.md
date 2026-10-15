@@ -31,7 +31,10 @@ one shared source tree, six Gradle projects, two loaders × three Minecraft vers
 * Generated/ignored: `build/`, `versions/*/build/`, `.gradle/`, `.gradle-home/`, `.devenv/`,
   `devenv.lock`. Never hand-edit build output, generated manifests, or cache contents.
 * **Do not re-add what was deliberately removed**: Forge/legacy-forge, more Minecraft versions,
-  datagen, CI/publishing workflows, ModMenu. Ask first if a task seems to need one.
+  datagen, ModMenu. Ask first if a task seems to need one.
+* **Never publish or release**: don't run `publishMods` / `publishGithub` / `publishModrinth` /
+  `publishCurseforge` (they upload), don't push or delete tags, and don't edit `.github/workflows/`,
+  `cliff.toml`, `CHANGELOG.md` or the publishing logic in `build-logic/` unless the user asks for it.
 * **Don't bump version pins casually** (`stonecutter.properties.toml`, `gradle/libs.versions.toml`,
   `settings.gradle.kts`): stonecutter 0.9.8, loom-back-compat 0.4.1 + loom 1.18.4, ModDevGradle
   2.0.148, fabric-loader 0.19.5 are a tested combination.
@@ -114,6 +117,36 @@ targets.
 A bare `./gradlew runClient` starts **all six** clients (task names resolve across every project
 that has them) — always qualify the project, or use `runActiveClient`. Runtime logs live in
 `versions/<mc>-<loader>/run/logs/latest.log`.
+
+## CI/CD and publishing
+
+Two GitHub Actions workflows in `.github/workflows/`:
+
+* `build.yml` — on every push/PR: JDK 25 + `./gradlew buildAndCollect --no-daemon`, uploads
+  `build/libs/` as the `build-artifacts` artifact. Needs no configuration.
+* `release.yml` — on tag push: reads `[mod].version` + `[mod].channel_tag` from
+  `stonecutter.properties.toml` and **deletes the tag and the GitHub release if the tag does not match**
+  (only `{version}{channel_tag}`, e.g. `0.0.1-dev`, is accepted), regenerates `CHANGELOG.md` with
+  git-cliff using `cliff.toml` (`%%%repo_url%%%` is replaced with the repository URL), then builds and
+  runs `./gradlew publishMods` with `MOD_IS_RELEASE=true` (drops the `-SNAPSHOT` suffix from versions).
+
+Publishing reads the environment, falling back to a `.env` file in the repo root (gitignored;
+`.env.template` documents every key):
+
+| variable | kind | effect |
+|---|---|---|
+| `PUB_GITHUB_ENABLE` | repo variable | `true` publishes GitHub releases |
+| `PUB_DRY_RUN` | repo variable | `true` simulates publishing, uploads nothing |
+| `PUB_MODS_ENABLE` | repo variable | gates Modrinth + CurseForge **only**; GitHub releases do not need it (see `PublishingLogic.kt`) |
+| `PUB_MODRINTH_PROJECT_ID`, `PUB_CURSEFORGE_PROJECT_ID` | repo variable | project ids, needed only once mods publishing is enabled |
+| `PUB_MODRINTH_STAGING`, `PUB_MAVEN_ENABLE`, `PUB_MAVEN_CENTRAL_ENABLE`, `PUB_MAVEN_CENTRAL_SNAPSHOTS` | repo variable | staging / maven toggles |
+| `PUB_MODRINTH_TOKEN`, `PUB_CURSEFORGE_TOKEN` | secret | platform API tokens |
+| `PUB_MAVEN_CENTRAL_USERNAME`, `PUB_MAVEN_CENTRAL_PASSWORD`, `PUB_SIGNING_KEY`, `PUB_SIGNING_ID`, `PUB_SIGNING_PASSWORD` | secret | Maven Central + signing |
+| `MOD_IS_RELEASE` | set by `release.yml` | release build (no `-SNAPSHOT`) |
+
+Currently only `PUB_GITHUB_ENABLE=true` and `PUB_DRY_RUN=false` are configured; Modrinth/CurseForge and
+Maven Central are deliberately unconfigured (no project ids/tokens), and with nothing enabled the
+per-platform `publishMods` tasks stay a no-op dry run.
 
 ## Writing code
 
