@@ -189,11 +189,18 @@ later.
     compatibility view). `ChunkAccess`'s other accessors already go through those two methods,
     so they are map-backed as well. Behaviour-preserving; the dense array stays only as the
     construction-time seed. *(done)*
-  - **F1c** — Remove the remaining direct `this.sections` reads inside `LevelChunk`, stop the
-    dense `getSectionsCount()`-sized allocation, widen `LevelHeightAccessor`/`Level` to the
-    configured range and make block get/set work at any Y on the server (verify with `/setblock`
-    + `/data`). Client, light and rendering stay on the vanilla band until F3. First in-game
-    GameTest lives here.
+  - **F1c** — `LevelMixin` widens only `isInsideBuildHeight`/`isOutsideBuildHeight` to the
+    per-dimension config range; `getMinY`/`getMaxY` and the whole section band stay on
+    `dimensionType()`, so heightmaps, light, natural spawning and every other loop bounded by the
+    min/max Y keep vanilla behaviour. `LevelChunk` reads/writes blocks at any section Y through
+    `ColumnStorage` — creating sections on demand and skipping the heightmap/light side effects
+    outside the band — and `ChunkHolder.blockChanged` ignores out-of-band changes. Verified
+    in-game: a client world ticks with a player logged in (natural spawning) without crashing,
+    and `/setblock` at y=+1,000,000 and y=-1,000,000 succeeds with `execute if block` read-back
+    and `/data get block` on a chest at y=1,000,001. *(done)*
+  - **F1c follow-ups:** out-of-band sections are in-memory only (persistence is F2); the light
+    engine, renderer, network and `BulkSectionAccess` still see the band only (F3/F4). The
+    in-game GameTest harness is the next step.
 - **F2 — Storage format.** Persist arbitrary-Y cubes to disk and read them back.
 - **F3 — Network + client.** Cube packets + client cube cache + rendering at high Y.
 - **F4 — Lighting.** Cubic sky light + occlusion shadow map (+ configurable cone).

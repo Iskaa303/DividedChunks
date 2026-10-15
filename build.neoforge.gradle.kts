@@ -51,6 +51,11 @@ repositories {
 	mavenCentral()
 }
 
+// Let the dedicated server read console commands from the terminal.
+tasks.named("runServer", JavaExec::class.java) {
+	standardInput = System.`in`
+}
+
 tasks.named("createMinecraftArtifacts") {
 	dependsOn(tasks.named("stonecutterGenerate"))
 }
