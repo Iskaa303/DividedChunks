@@ -132,9 +132,10 @@ that has them) — always qualify the project, or use `runActiveClient`. Runtime
 
 Two GitHub Actions workflows in `.github/workflows/`:
 
-* `build.yml` — on every push/PR: JDK 25 + `./gradlew build mergeJars --no-daemon`, then
-  `./gradlew runGameTests --no-daemon` (the six in-game GameTest servers), and uploads the
-  universal jars (`build/forgix/*.jar`) as the `build-artifacts` artifact. Needs no configuration.
+* `build.yml` — on every push/PR: JDK 25 + `./gradlew build mergeJars -x test --no-daemon`, then
+  `./gradlew test --no-daemon` (the JUnit tests), then `./gradlew runGameTests --no-daemon` (the six
+  in-game GameTest servers), and uploads the universal jars (`build/forgix/*.jar`) as the
+  `build-artifacts` artifact. Needs no configuration.
 * `release.yml` — on tag push: reads `[mod].version` + `[mod].channel_tag` from
   `stonecutter.properties.toml` and **deletes the tag and the GitHub release if the tag does not match**
   (only `{version}{channel_tag}`, e.g. `0.0.1-dev`, is accepted), regenerates `CHANGELOG.md` with

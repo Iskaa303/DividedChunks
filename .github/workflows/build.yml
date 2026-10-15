@@ -23,7 +23,10 @@ jobs:
           gradle-version: wrapper
 
       - name: Build with Gradle
-        run: ./gradlew build mergeJars --no-daemon --stacktrace --console=plain
+        run: ./gradlew build mergeJars -x test --no-daemon --stacktrace --console=plain
+
+      - name: Run unit tests
+        run: ./gradlew test --no-daemon --stacktrace --console=plain
 
       - name: Run in-game GameTests
         run: ./gradlew runGameTests --no-daemon --stacktrace --console=plain
