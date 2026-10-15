@@ -14,12 +14,9 @@ import java.util.Optional;
 import java.util.zip.CRC32;
 
 /**
- * One cube region file: a small header followed by a sequence of compressed cube records.
- *
- * <p>Records are append-only, so overwriting or removing a cube leaves dead space behind. The
- * in-memory index maps each cube to its payload offset and is rebuilt on open by scanning record
- * headers; bytes left by an interrupted write are dropped. Once dead space passes the compaction
- * threshold the file is rewritten with only the live records.</p>
+ * One cube region file: a small header followed by append-only cube records. The index is rebuilt
+ * on open by scanning record headers, dropping bytes left by an interrupted write; dead space past
+ * a threshold triggers compaction.
  *
  * <p>Layout is big-endian:
  * <pre>

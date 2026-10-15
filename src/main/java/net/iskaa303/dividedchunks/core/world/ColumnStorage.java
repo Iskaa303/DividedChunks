@@ -7,13 +7,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
-/**
- * Sparse store of one value per 16-block section of a column, keyed by section Y.
- *
- * <p>Only occupied sections are held, so empty sections cost nothing and the store spans any
- * vertical range without allocating for the gaps. Iteration runs from the lowest section Y to
- * the highest.</p>
- */
+/** Sparse per-column store of one value per section Y; iteration runs lowest to highest. */
 public final class ColumnStorage<T> {
 
 	private final Int2ObjectSortedMap<T> bySectionY = new Int2ObjectAVLTreeMap<>();

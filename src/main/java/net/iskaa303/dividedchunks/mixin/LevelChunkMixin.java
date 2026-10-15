@@ -25,13 +25,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.Map;
 
 /**
- * Handles block read/write outside the dimension's section band through the sparse column storage.
- * Inside the band the vanilla implementation runs unchanged (it already goes through
- * {@code getSection}); outside it, the section is created on demand and the heightmap/light side
- * effects are skipped.
- *
- * <p>Stored out-of-band sections are loaded lazily on the first out-of-band access of a chunk, and
- * a section is written back whenever it changes.</p>
+ * Reads and writes blocks outside the dimension's section band through the sparse column storage:
+ * the section is created on demand, and the heightmap/light side effects are skipped. Stored
+ * out-of-band sections load lazily on first access and are written back when they change.
  */
 @Mixin(LevelChunk.class)
 public abstract class LevelChunkMixin {

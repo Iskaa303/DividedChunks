@@ -6,8 +6,8 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 /**
- * Compression of one cube payload. The id is written into every record so a later version can add a
- * codec and still read existing files.
+ * Compression of one cube payload; the id is written per record so a later version can add a codec
+ * and still read old files.
  */
 enum CubeCodec {
 

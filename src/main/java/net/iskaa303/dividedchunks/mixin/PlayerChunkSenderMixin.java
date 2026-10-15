@@ -10,10 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Sends a chunk's stored out-of-band sections right after the chunk packet, so a client joining or
- * moving near existing high-Y builds receives them.
- */
+/** Sends a chunk's stored out-of-band sections right after its chunk packet. */
 @Mixin(PlayerChunkSender.class)
 public abstract class PlayerChunkSenderMixin {
 

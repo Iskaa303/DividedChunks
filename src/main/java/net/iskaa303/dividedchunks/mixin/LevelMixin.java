@@ -7,12 +7,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 /**
- * Widens {@code isInsideBuildHeight}/{@code isOutsideBuildHeight} to the dimension's configured
- * range, so a block can be placed outside the vanilla band.
- *
- * <p>{@code getMinY}/{@code getMaxY} and the whole section band stay on {@code dimensionType()}, so
- * heightmaps, light, spawning and every other loop bounded by the min/max Y keep vanilla
- * behaviour. Sections outside the band are reached by section Y instead.</p>
+ * Widens {@code isInsideBuildHeight} to the dimension's configured range, so the level's block
+ * accessors (guarded by {@code isInValidBounds}) accept positions outside the vanilla band.
+ * {@code isOutsideBuildHeight} stays on the vanilla band, because vanilla uses it as the "outside
+ * the rendered band" proxy (e.g. {@code LevelLoadTracker}); {@code getMinY}/{@code getMaxY} stay
+ * vanilla too.
  */
 @Mixin(Level.class)
 public abstract class LevelMixin {
@@ -25,9 +24,5 @@ public abstract class LevelMixin {
 	public boolean isInsideBuildHeight(int blockY) {
 		DividedChunksConfig.DimensionConfig config = this.dividedchunks$config();
 		return blockY >= config.minY && blockY <= config.maxY;
-	}
-
-	public boolean isOutsideBuildHeight(int blockY) {
-		return !this.isInsideBuildHeight(blockY);
 	}
 }

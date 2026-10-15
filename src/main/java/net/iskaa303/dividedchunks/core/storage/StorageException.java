@@ -1,8 +1,6 @@
 package net.iskaa303.dividedchunks.core.storage;
 
-/**
- * Thrown when a {@link CubeStorage} operation fails.
- */
+/** Thrown when a {@link CubeStorage} operation fails. */
 public final class StorageException extends RuntimeException {
 
 	public StorageException(String message) {

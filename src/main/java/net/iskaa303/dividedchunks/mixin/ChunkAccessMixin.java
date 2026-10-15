@@ -14,15 +14,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Holds {@link ChunkAccess}'s sections in a sparse {@link ColumnStorage} keyed by section Y.
- *
- * <p>The constructor's dense array seeds the storage, {@code getSection(int)} and
- * {@code getSections()} read it, and {@code getSections()} returns a cached view holding the
- * same sections in the same order.</p>
- *
- * <p>The chunk keeps the dimension's vanilla height band, so heightmaps and light stay small; the
- * methods here map that band, while {@link LevelChunkMixin} reaches sections outside it by
- * section Y.</p>
+ * Holds {@link ChunkAccess}'s sections in a sparse {@link ColumnStorage} keyed by section Y: the
+ * constructor array seeds it, and {@code getSection}/{@code getSections} read it
+ * ({@code getSections} returns a cached view in the same order). Sections outside the vanilla band
+ * are reached through {@link LevelChunkMixin}.
  */
 @Mixin(ChunkAccess.class)
 public abstract class ChunkAccessMixin implements ColumnSectionAccess {

@@ -5,10 +5,8 @@ import net.iskaa303.dividedchunks.api.util.CubePos;
 import java.util.Optional;
 
 /**
- * Sparse on-disk store of one opaque payload per cube, keyed by {@link CubePos}.
- *
- * <p>The payload is whatever the caller encoded; the store only compresses it. Implementations are
- * expected to be safe to use from more than one thread.</p>
+ * Sparse on-disk store of one opaque payload per {@link CubePos}; the store only compresses it.
+ * Implementations must be safe to use from more than one thread.
  */
 public interface CubeStorage extends AutoCloseable {
 

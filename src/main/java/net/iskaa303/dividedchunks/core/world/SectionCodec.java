@@ -21,8 +21,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 /**
- * Encodes a {@link LevelChunkSection} to bytes and back, the same name-based NBT vanilla uses for
- * chunk sections, so stored cubes survive block/biome registry changes between sessions.
+ * Encodes a {@link LevelChunkSection} to bytes and back as name-based NBT, so stored cubes survive
+ * registry changes between sessions.
  */
 public final class SectionCodec {
 

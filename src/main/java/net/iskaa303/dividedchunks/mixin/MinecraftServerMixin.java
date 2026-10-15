@@ -7,10 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Closes the per-dimension cube stores after the server has saved and stopped, so every region
- * file is flushed.
- */
+/** Closes the per-dimension cube stores after the server stops, flushing every region file. */
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin {
 

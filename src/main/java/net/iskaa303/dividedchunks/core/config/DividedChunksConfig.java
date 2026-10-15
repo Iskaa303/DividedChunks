@@ -16,12 +16,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Mod configuration, stored as {@code config/dividedchunks.toml}.
- *
- * <p>One global section plus per-dimension overrides; a dimension without an entry falls
- * back to {@link #defaults}. The file is generated with comments and re-normalised on
- * every load, so a hand-edited value is kept but the shape always stays valid. Loading a
- * malformed file logs a warning and falls back to defaults rather than failing startup.</p>
+ * Mod configuration, stored as {@code config/dividedchunks.toml}: one global section plus
+ * per-dimension overrides, re-normalised on every load. A malformed file logs a warning and falls
+ * back to defaults instead of failing startup.
  */
 public final class DividedChunksConfig {
 

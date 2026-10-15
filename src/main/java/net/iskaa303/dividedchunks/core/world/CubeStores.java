@@ -10,9 +10,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * One {@link CubeRegionStorage} per dimension of the running server, rooted under
- * {@code <world>/dividedchunks/<namespace>/<path>}. Stores open on first use and are closed when the
- * server stops.
+ * One {@link CubeRegionStorage} per dimension, under
+ * {@code <world>/dividedchunks/<namespace>/<path>}; closed when the server stops.
  */
 public final class CubeStores {
 

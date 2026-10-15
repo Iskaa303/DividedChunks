@@ -10,11 +10,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Cube storage split into region files, one per {@link CubeRegionFile#REGION_SIZE}&#215;{@code
- * REGION_SIZE} chunk columns.
- *
- * <p>Region files are opened on demand and the least recently used ones are closed once the cache is
- * full, so touching many regions does not exhaust file handles.</p>
+ * Cube storage split into {@link CubeRegionFile#REGION_SIZE}&#215;{@code REGION_SIZE}-column region
+ * files, opened on demand with an LRU cap so many regions do not exhaust file handles.
  */
 public final class CubeRegionStorage implements CubeStorage {
 

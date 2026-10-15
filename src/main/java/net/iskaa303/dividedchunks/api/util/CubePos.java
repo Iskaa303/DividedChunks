@@ -1,12 +1,6 @@
 package net.iskaa303.dividedchunks.api.util;
 
-/**
- * Immutable position of one 16&#215;16&#215;16 cube, in cube coordinates.
- *
- * <p>{@code y} is a section coordinate just like {@code x} and {@code z}, so a cube can sit
- * at any height the world allows. Use {@link #fromBlock(int, int, int)} to build one from a
- * block position.</p>
- */
+/** One 16&#215;16&#215;16 cube in cube coordinates; {@code y} is a section Y like {@code x}/{@code z}. */
 public record CubePos(int x, int y, int z) {
 
 	public static CubePos fromBlock(int blockX, int blockY, int blockZ) {

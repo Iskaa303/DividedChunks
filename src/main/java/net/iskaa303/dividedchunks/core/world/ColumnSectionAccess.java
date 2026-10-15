@@ -2,10 +2,7 @@ package net.iskaa303.dividedchunks.core.world;
 
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
-/**
- * Sparse section access added to {@code ChunkAccess} by its mixin, so other mixins can reach the
- * column storage without the dense-array index round-trip.
- */
+/** Sparse section access that {@code ChunkAccessMixin} adds to {@code ChunkAccess}. */
 public interface ColumnSectionAccess {
 
 	/** The section stored at {@code sectionY}, or {@code null}. */
