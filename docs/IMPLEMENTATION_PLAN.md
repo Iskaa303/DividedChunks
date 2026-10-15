@@ -20,7 +20,7 @@ dimension into a *cubic* world:
   vanilla and modded code that asks "what is at (x, y, z)?" simply works at any Y.
 - Sky light is occlusion-aware over an unbounded column (a roof far above blocks light;
   a distant floating slab does not black out the ground depending on config).
-- Storage is sparse and DB-backed (SQLite, bundled natively like Distant Horizons) with
+- Storage is sparse and file-backed (a custom region format, no embedded database) with
   no fixed section-count ceiling.
 - Default vertical range is ±30,000,000 (matching the vanilla horizontal extent); it is
   configurable.
@@ -101,20 +101,22 @@ implemented by mixin-injected interfaces on vanilla classes, exactly like the va
   configurable cone (Q3) affecting how far horizontally a shadow is cast.
 - Light data storage is section-keyed and sparse like blocks.
 
-### 4.5 Storage format (approved: embedded database)
+### 4.5 Storage format (approved: custom region files)
 
-- **SQLite** via `org.xerial:sqlite-jdbc`, shaded into the mod jar and **native-relocated**
-  the way Distant Horizons does it (`relocate_natives`-style separate native namespace),
-  so the bundled `sqlitejdbc` native library cannot collide with other mods.
-- One database per dimension (or per world, sharded by dimension), WAL journaling, a
-  `cubes` table keyed by `(chunkX, sectionY, chunkZ)` with a compressed blob payload
-  (zstd, later; zlib initially to avoid a native dep on day one).
-- Columns/heights/biomes live in their own tables; schema is versioned from the first
-  migration.
+- **Own format**, no embedded database. One region file per 32&#215;32 chunk columns per
+  dimension (`r.<rx>.<rz>.dcr`), opened lazily with an LRU cap on open files.
+- A file is a header (`DCRF` magic + format version) followed by append-only records, one
+  per cube: `chunkX, sectionY, chunkZ, payload length, codec id, CRC32, payload`.
+- Payloads use **zlib** (`java.util.zip`), so the mod needs no extra dependency, no native
+  library and no bundling. The per-record codec id leaves room for LZ4 (already on both
+  loaders' classpath via vanilla) or zstd later.
+- The index is rebuilt on open by scanning record headers; bytes left by an interrupted
+  write are dropped, and dead space past the threshold triggers compaction into a rewritten
+  file.
+- Columns/heights/biomes get their own files later; the format version is the migration
+  anchor.
 - Must support reading a vanilla-generated world's base band so an existing world can
   be lifted into cubic mode without regeneration (conversion path is a later milestone).
-- **Licensing note:** sqlite-jdbc is Apache-2.0; bundled native binaries keep their own
-  licences and must be listed if ever distributed.
 
 ### 4.6 Network
 - Vanilla sends whole columns including every section in the build range; that is
@@ -206,7 +208,14 @@ later.
     unit tests, with the `test` source set folded into the main mod for dev runs and per-loader
     `runGameTestServer` configurations. The first test writes a block at y=+1,000,000 and reads it
     back; verified passing on NeoForge and Fabric. *(done)*
-- **F2 — Storage format.** Persist arbitrary-Y cubes to disk and read them back.
+- **F2 — Storage format.** Persist arbitrary-Y cubes to disk and read them back. Split:
+  - **F2a** — `core.storage.CubeStorage` + `CubeRegionStorage`: the custom
+    `r.<rx>.<rz>.dcr` region format (zlib records keyed by `(chunkX, sectionY, chunkZ)`,
+    CRC32, index rebuild on open, truncation recovery, compaction). JUnit tests cover
+    store/read/remove/reopen, region routing, extreme coordinates, corruption and
+    compaction. *(done)*
+  - **F2b** — Encode a `LevelChunkSection` to bytes and wire it: write the cube when a block is set
+    outside the vanilla band, and read the stored cubes back into the column when the chunk loads.
 - **F3 — Network + client.** Cube packets + client cube cache + rendering at high Y.
 - **F4 — Lighting.** Cubic sky light + occlusion shadow map (+ configurable cone).
 - **F5 — Loading/tickets.** 3D view distance, vertical loading, unload GC.
@@ -234,8 +243,8 @@ later.
    outside the range are clamped and snapped to cube boundaries. **Caveat for F1:** at this range
    `getMaxY() - getMinY()` overflows int, so height must never be derived by int subtraction; use
    long or a sentinel.
-2. **Storage:** **embedded database (SQLite)**, bundled/relocated like Distant Horizons,
-   chosen for scalability and future workflow. Height configurable, default 30M.
+2. **Storage:** **custom region files with zlib**, no embedded database and no native
+   dependency. Height configurable, default 30M.
 3. **Lighting:** **angled sky cone**, configurable per dimension. Occlusion-aware shadow
    map over the full column; persisted for unloaded columns; a fully closed column blocks
    all sky light.
