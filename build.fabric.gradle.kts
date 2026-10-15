@@ -80,6 +80,10 @@ tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJ
 	relocate("com.electronwill.nightconfig", "DividedChunks.libraries.electronwill.nightconfig")
 	mergeServiceFiles()
 	archiveClassifier.set("")
+	// NightConfig core carries Java 17 overrides of two serde classes; keep only the base versions
+	// and drop the multi-release marker so the jar is a plain one.
+	exclude("META-INF/versions/**")
+	addMultiReleaseAttribute.set(false)
 }
 
 // The shaded jar replaces the plain one as the mod's artifact.
