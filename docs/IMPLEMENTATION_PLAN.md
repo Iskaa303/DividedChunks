@@ -160,15 +160,17 @@ vanilla sources for the methods that still assume dense sections.
     Minecraft and loader types when needed.
 - **In-game GameTests** (26.x registry-driven framework). Clean-room, written from the
   vanilla/NeoForge/Fabric sources in this repo, not copied:
-  - Shared logic: plain `static void test(GameTestHelper)` methods in `src/test/java`.
-  - Fabric: the `fabric-gametest-api-v1` `@GameTest` annotation is discovered by Fabric's
-    annotation locator (fabric-api is already a dependency).
-  - NeoForge: a custom inline `GameTestInstance` registered by handling
-    `RegisterGameTestsEvent` on the mod bus; nothing game-test related ships in production.
-  - Built-in scene/environment: `minecraft:empty` structure + `minecraft:default`
+  - Shared logic and the loader entries live in `src/test/java/.../gametest/`, next to the unit
+    tests. The `test` source set is folded into the main mod for dev runs, so no game-test code
+    reaches the jar.
+  - Fabric: `FabricGameTests` is the `fabric-gametest` entrypoint declared in the generated
+    `fabric.mod.json`; the entrypoint is never loaded outside a dev/gametest run.
+  - NeoForge: `NeoforgeGameTests` is an `@EventBusSubscriber` handling `RegisterGameTestsEvent`
+    and registering an in-code `InlineGameTest`.
+  - Built-in scene/environment: the `minecraft:empty` structure plus a self-registered empty
     environment, so no NBT templates have to be authored.
-  - Run configurations for the game test server are added per loader.
-  - GameTests are introduced with the first in-game behaviour (F1c), not before.
+  - Runs: `./gradlew :<mc>-neoforge:runGameTestServer` and `./gradlew :<mc>-fabric:runGameTestServer`.
+    Both exit non-zero if a required test fails.
 - **In-game manual verification** per milestone: run `:26.3-neoforge:runClient` (and
   `:26.1.2-fabric` when convenient), read `run/logs/latest.log`, exercise the feature, then
   hand to the user.
@@ -199,8 +201,11 @@ later.
     and `/setblock` at y=+1,000,000 and y=-1,000,000 succeeds with `execute if block` read-back
     and `/data get block` on a chest at y=1,000,001. *(done)*
   - **F1c follow-ups:** out-of-band sections are in-memory only (persistence is F2); the light
-    engine, renderer, network and `BulkSectionAccess` still see the band only (F3/F4). The
-    in-game GameTest harness is the next step.
+    engine, renderer, network and `BulkSectionAccess` still see the band only (F3/F4).
+  - **F1d** — In-game GameTest harness: tests live in `src/test/java/.../gametest/` alongside the
+    unit tests, with the `test` source set folded into the main mod for dev runs and per-loader
+    `runGameTestServer` configurations. The first test writes a block at y=+1,000,000 and reads it
+    back; verified passing on NeoForge and Fabric. *(done)*
 - **F2 — Storage format.** Persist arbitrary-Y cubes to disk and read them back.
 - **F3 — Network + client.** Cube packets + client cube cache + rendering at high Y.
 - **F4 — Lighting.** Cubic sky light + occlusion shadow map (+ configurable cone).

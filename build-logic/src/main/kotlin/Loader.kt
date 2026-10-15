@@ -58,6 +58,7 @@ sealed class Loader(val id: String) {
 				entrypoints = mapOf(
 					"main" to listOf("${ctx.modGroup}.${ctx.modId}.platform.fabric.FabricEntrypoint"),
 					"client" to listOf("${ctx.modGroup}.${ctx.modId}.platform.fabric.FabricClientEntrypoint"),
+					"fabric-gametest" to listOf("${ctx.modGroup}.${ctx.modId}.gametest.FabricGameTests"),
 					"fabric-datagen" to listOf("${ctx.modGroup}.${ctx.modId}.platform.fabric.datagen.FabricDataGeneratorEntrypoint")
 				),
 				mixins = listOf("${ctx.modId}.mixins.json"),

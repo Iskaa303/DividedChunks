@@ -35,11 +35,18 @@ neoForge {
 			ideName = "NeoForge Server (${stonecutter.current.version})"
 			jvmArguments.addAll(devJvmArgs)
 		}
+		register("gameTestServer") {
+			type = "gameTestServer"
+			gameDirectory = file("run/")
+			ideName = "NeoForge Game Test (${stonecutter.current.version})"
+			jvmArguments.addAll(devJvmArgs)
+		}
 	}
 
 	mods {
 		register(prop("mod.id")) {
 			sourceSet(sourceSets["main"])
+			sourceSet(sourceSets["test"])
 		}
 	}
 
@@ -50,6 +57,7 @@ neoForge {
 repositories {
 	mavenCentral()
 }
+
 
 // Let the dedicated server read console commands from the terminal.
 tasks.named("runServer", JavaExec::class.java) {

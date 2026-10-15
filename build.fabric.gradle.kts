@@ -26,13 +26,21 @@ platform {
 	}
 }
 
+val devJvmArgs = propsList("mod", "dev_jvm_args")
+
 loom {
 	accessWidenerPath = rootProject.file("src/main/resources/aw/${sc.current.version}.accesswidener")
-	val devJvmArgs = propsList("mod", "dev_jvm_args")
+	// The test source set carries the GameTests. Folding it into the main mod keeps them out of the
+	// jar while making them load in the dev GameTest run.
+	mods.register(prop("mod.id")) {
+		sourceSet(sourceSets["main"])
+		sourceSet(sourceSets["test"])
+	}
 	runs.named("client") {
 		client()
 		generateRunConfig.set(true)
 		runDirectory.set(layout.projectDirectory.dir("run"))
+		sourceSet = "test"
 		programArguments.add("--username=Dev")
 		jvmArguments.addAll(devJvmArgs)
 		displayName.set("Fabric Client (${sc.current.version})")
@@ -41,12 +49,23 @@ loom {
 		server()
 		generateRunConfig.set(true)
 		runDirectory.set(layout.projectDirectory.dir("run"))
+		sourceSet = "test"
 		jvmArguments.addAll(devJvmArgs)
 		displayName.set("Fabric Server (${sc.current.version})")
 	}
+	runs.register("gameTestServer") {
+		server()
+		generateRunConfig.set(true)
+		runDirectory.set(layout.projectDirectory.dir("run"))
+		sourceSet = "test"
+		jvmArguments.add("-Dfabric-api.gametest")
+		jvmArguments.add("-Dfabric-api.gametest.report-file=${layout.buildDirectory.get().asFile.path}/gametest/junit.xml")
+		jvmArguments.addAll(devJvmArgs)
+		displayName.set("Fabric Game Test (${sc.current.version})")
+	}
 }
 
-fabricApi {
+	fabricApi {
 	configureDataGeneration {
 		outputDirectory = file("${rootDir}/versions/datagen/${sc.current.version}/src/main/generated")
 		client = true

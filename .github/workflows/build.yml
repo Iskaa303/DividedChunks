@@ -25,6 +25,9 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build mergeJars --no-daemon --stacktrace --console=plain
 
+      - name: Run in-game GameTests
+        run: ./gradlew runGameTests --no-daemon --stacktrace --console=plain
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:

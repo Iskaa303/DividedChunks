@@ -50,6 +50,13 @@ class ModRootPlugin : Plugin<Project> {
 				dependsOn(stonecutter.current!!.project + ":runServer")
 			}
 
+			// In-game GameTests run one server at a time (each binds the default port).
+			tasks.register("runGameTests") {
+				group = "verification"
+				description = "Runs the in-game GameTests for every Minecraft version and loader"
+				dependsOn(stonecutter.versions.map { "${it.project}:runGameTestServer" })
+			}
+
 			for (version in stonecutter.versions.map { it.version }.distinct()) tasks.register("publish$version") {
 				group = "publishing"
 				dependsOn(stonecutter.tasks.named("publishMods") { metadata.version == version })

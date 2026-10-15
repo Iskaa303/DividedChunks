@@ -73,13 +73,18 @@ jar tf .gradle-home/caches/neoformruntime/intermediate_results/mergeWithSources_
 ### Tests and reports
 
 ```bash
-./gradlew test                    # all versions;  HTML: versions/<mc>-<loader>/build/reports/tests/test/index.html
-./gradlew :26.3-neoforge:test     # one version
+./gradlew test                    # unit tests, all versions
+./gradlew :26.3-neoforge:test     # unit tests, one version
+./gradlew runGameTests            # in-game GameTests, every version and loader (one server at a time)
+./gradlew :26.3-neoforge:runGameTestServer   # in-game GameTests (NeoForge, one target)
+./gradlew :26.3-fabric:runGameTestServer      # in-game GameTests (Fabric, one target)
 ./gradlew javadoc                 # all versions;  HTML: versions/<mc>-<loader>/build/docs/javadoc/index.html
 ./gradlew :26.3-neoforge:javadoc  # one version
 ```
 
-`./gradlew build` runs both. In-game GameTests are documented in `docs/IMPLEMENTATION_PLAN.md`.
+`./gradlew build` runs the unit tests and javadoc only. The gametests in `src/test/java/.../gametest/`
+run through `runGameTests` (or `:<mc>-<loader>:runGameTestServer` for one target); see
+`docs/IMPLEMENTATION_PLAN.md`.
 
 ## Credits
 

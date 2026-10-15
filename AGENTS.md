@@ -118,6 +118,8 @@ targets.
 ./gradlew buildAndCollect                # same, and copy jars to build/libs/0.0.1-dev-SNAPSHOT/
 ./gradlew :26.3-fabric:build             # one target
 ./gradlew :26.2-neoforge:runClient       # dev client, one target
+./gradlew :26.3-neoforge:runGameTestServer # in-game GameTests, one loader (also runGameTestServer on Fabric)
+./gradlew runGameTests                   # in-game GameTests, every version and loader
 ./gradlew runActiveClient                # client of the version in .sc_active_version
 ./gradlew runActiveServer                # ... and its server
 ```
@@ -130,7 +132,8 @@ that has them) — always qualify the project, or use `runActiveClient`. Runtime
 
 Two GitHub Actions workflows in `.github/workflows/`:
 
-* `build.yml` — on every push/PR: JDK 25 + `./gradlew build mergeJars --no-daemon`, uploads the
+* `build.yml` — on every push/PR: JDK 25 + `./gradlew build mergeJars --no-daemon`, then
+  `./gradlew runGameTests --no-daemon` (the six in-game GameTest servers), and uploads the
   universal jars (`build/forgix/*.jar`) as the `build-artifacts` artifact. Needs no configuration.
 * `release.yml` — on tag push: reads `[mod].version` + `[mod].channel_tag` from
   `stonecutter.properties.toml` and **deletes the tag and the GitHub release if the tag does not match**
