@@ -1,6 +1,7 @@
 [versions]
 stonecutter = "0.9.8"
 shadow = "9.6.1"
+forgix = "2.0.0"
 stonecutter-postprocess = "2.1-beta.8"
 mod-publish = "2.1.1"
 loomx = "0.4.1"
@@ -23,6 +24,7 @@ fletching-table = { module = "dev.kikugie:fletching-table", version.ref = "fletc
 vanniktech-maven-publish = { module = "com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin", version.ref = "vanniktech-maven-publish" }
 serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization-json" }
 serialization-toml = { module = "dev.eav.tomlkt:tomlkt", version.ref = "serialization-toml" }
+forgix = { module = "io.github.pacifistmc.forgix:Forgix", version.ref = "forgix" }
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

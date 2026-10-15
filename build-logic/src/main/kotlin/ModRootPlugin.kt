@@ -2,8 +2,10 @@ import dev.kikugie.stonecutter.controller.StonecutterControllerExtension
 import me.modmuss50.mpp.ModPublishExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.assign
 import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.register
 
 class ModRootPlugin : Plugin<Project> {
 	override fun apply(project: Project) {
@@ -50,6 +52,27 @@ class ModRootPlugin : Plugin<Project> {
 			for (version in stonecutter.versions.map { it.version }.distinct()) tasks.register("publish$version") {
 				group = "publishing"
 				dependsOn(stonecutter.tasks.named("publishMods") { metadata.version == version })
+			}
+
+			// One universal jar per Minecraft version, merging the Fabric and NeoForge jars for it.
+			val baseVersion = "$modVersion$channelTag"
+			val snapshotSuffix = if (envTrue("MOD_IS_RELEASE")) "" else "-SNAPSHOT"
+			val mergeTasks = stonecutter.versions.map { it.version }.distinct().map { version ->
+				val fabricProject = project(":$version-fabric")
+				val neoforgeProject = project(":$version-neoforge")
+				tasks.register<MergeLoadersTask>("mergeJars${version.replace(".", "")}") {
+					group = "forgix"
+					description = "Merges the Fabric and NeoForge jars for Minecraft $version"
+					dependsOn(":$version-fabric:shadowJar", ":$version-neoforge:jar")
+					fabricJar.set(fabricProject.provider { fabricProject.tasks.named("shadowJar", Jar::class.java).get().archiveFile.get() })
+					neoforgeJar.set(neoforgeProject.provider { neoforgeProject.tasks.named("jar", Jar::class.java).get().archiveFile.get() })
+					outputJar.set(layout.buildDirectory.file("forgix/dividedchunks-$baseVersion-universal+$version$snapshotSuffix.jar"))
+				}
+			}
+			tasks.register("mergeJars") {
+				group = "forgix"
+				description = "Merges every Minecraft version's Fabric and NeoForge jars"
+				dependsOn(mergeTasks)
 			}
 		}
 	}

@@ -36,4 +36,5 @@ dependencies {
 	implementation(libs.vanniktech.maven.publish)
 	implementation(libs.serialization.json)
 	implementation(libs.serialization.toml)
+	implementation(libs.forgix)
 }
