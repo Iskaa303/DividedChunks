@@ -7,7 +7,7 @@ plugins {
 // NightConfig (TOML) is shipped by NeoForge/FML but not by Fabric Loader, so on Fabric it is
 // shaded into the mod jar under a private package. LGPL-3.0; see licenses/night-config.txt.
 val nightConfig = "com.electronwill.night-config:toml:3.9.0"
-val nightConfigShaded by configurations.creating
+val nightConfigShaded = configurations.create("nightConfigShaded")
 
 platform {
 	loader = "fabric"
@@ -89,3 +89,8 @@ tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJ
 // The shaded jar replaces the plain one as the mod's artifact.
 tasks.named("jar") { enabled = false }
 tasks.named("assemble") { dependsOn(tasks.named("shadowJar")) }
+
+// The Kotlin compiler lags the Java toolchain; pin its target so it does not warn about the fallback.
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+	compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_24)
+}

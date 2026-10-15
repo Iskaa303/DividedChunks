@@ -10,6 +10,7 @@ devenv shell
 ./gradlew runActiveClient          # client of the active version
 ./gradlew runActiveServer          # server of the active version
 ./gradlew build                    # build every loader/version
+./gradlew mergeJars                # per version: merge the Fabric + NeoForge jar -> build/forgix/
 ./gradlew :26.3-neoforge:runClient # one specific loader/version
 ```
 

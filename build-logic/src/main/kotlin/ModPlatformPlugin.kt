@@ -1,4 +1,6 @@
 import dev.kikugie.fletching_table.extension.FletchingTableExtension
+import org.gradle.api.tasks.javadoc.Javadoc
+import org.gradle.external.javadoc.StandardJavadocDocletOptions
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -122,6 +124,10 @@ abstract class ModPlatformPlugin @Inject constructor() : Plugin<Project> {
 		dependencies.add("testImplementation", "org.junit.jupiter:junit-jupiter:5.11.4")
 		dependencies.add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
 		tasks.withType<Test>().configureEach { useJUnitPlatform() }
+		// Javadoc only documents the public surface; don't warn about undocumented members.
+		tasks.withType<Javadoc>().configureEach {
+			(options as StandardJavadocDocletOptions).addStringOption("Xdoclint:none", "-quiet")
+		}
 	}
 
 	private fun Project.registerGenerateManifestTask(ctx: Context) {

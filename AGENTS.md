@@ -114,6 +114,7 @@ targets.
 
 ```bash
 ./gradlew build                          # compile + jar all six targets (run this after shared-code changes)
+./gradlew mergeJars                      # per MC version: merge the Fabric + NeoForge jars into build/forgix/
 ./gradlew buildAndCollect                # same, and copy jars to build/libs/0.0.1-dev-SNAPSHOT/
 ./gradlew :26.3-fabric:build             # one target
 ./gradlew :26.2-neoforge:runClient       # dev client, one target
@@ -129,8 +130,8 @@ that has them) — always qualify the project, or use `runActiveClient`. Runtime
 
 Two GitHub Actions workflows in `.github/workflows/`:
 
-* `build.yml` — on every push/PR: JDK 25 + `./gradlew buildAndCollect --no-daemon`, uploads
-  `build/libs/` as the `build-artifacts` artifact. Needs no configuration.
+* `build.yml` — on every push/PR: JDK 25 + `./gradlew build mergeJars --no-daemon`, uploads the
+  universal jars (`build/forgix/*.jar`) as the `build-artifacts` artifact. Needs no configuration.
 * `release.yml` — on tag push: reads `[mod].version` + `[mod].channel_tag` from
   `stonecutter.properties.toml` and **deletes the tag and the GitHub release if the tag does not match**
   (only `{version}{channel_tag}`, e.g. `0.0.1-dev`, is accepted), regenerates `CHANGELOG.md` with
@@ -270,7 +271,8 @@ fastest way to read vanilla/loader behaviour. Prefer this over guessing API shap
 * After touching runtime behaviour: run the affected `:mc-loader:runClient` and read
   `versions/<mc>-<loader>/run/logs/latest.log` for the expected lines; don't report success from a
   compile alone.
-* Javadoc "no comment" warnings during `build` are noise and expected.
+* `./gradlew build` must be warning-free: javadoc missing-comment checks are disabled
+  (`-Xdoclint:none -quiet`) and the Kotlin JVM target is pinned. Treat any new warning as a regression.
 * Report what you actually verified and what you did not.
 
 ## Known issues (already diagnosed — don't re-investigate from scratch)

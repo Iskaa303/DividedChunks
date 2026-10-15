@@ -2,6 +2,7 @@ import dev.kikugie.stonecutter.controller.StonecutterControllerExtension
 import me.modmuss50.mpp.ModPublishExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.tasks.Delete
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.assign
 import org.gradle.kotlin.dsl.getByType
@@ -73,6 +74,13 @@ class ModRootPlugin : Plugin<Project> {
 				group = "forgix"
 				description = "Merges every Minecraft version's Fabric and NeoForge jars"
 				dependsOn(mergeTasks)
+			}
+
+			// The root project owns build/forgix and build/libs but has no built-in clean task.
+			tasks.register<Delete>("clean") {
+				group = "build"
+				description = "Deletes the root build directory (merged jars, collected jars, reports)"
+				delete(layout.buildDirectory)
 			}
 		}
 	}
