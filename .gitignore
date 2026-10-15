@@ -59,3 +59,4 @@ bin/
 .gradle-home/
 .devenv/
 versions/
+!versions/datagen/

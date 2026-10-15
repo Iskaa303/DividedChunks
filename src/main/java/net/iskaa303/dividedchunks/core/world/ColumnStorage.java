@@ -10,10 +10,9 @@ import java.util.function.BiConsumer;
 /**
  * Sparse store of one value per 16-block section of a column, keyed by section Y.
  *
- * <p>Vanilla keeps a dense {@code LevelChunkSection[]} sized to the dimension's whole build
- * height, so it cannot be allowed to grow. This holds only the sections that actually exist,
- * so a column can span any vertical range without allocating for empty space. Iteration is
- * from the lowest section Y to the highest.</p>
+ * <p>Only occupied sections are held, so empty sections cost nothing and the store spans any
+ * vertical range without allocating for the gaps. Iteration runs from the lowest section Y to
+ * the highest.</p>
  */
 public final class ColumnStorage<T> {
 

@@ -190,6 +190,13 @@ Shared code goes in `net.iskaa303.dividedchunks`, loader-specific code in
 `net.iskaa303.dividedchunks.platform.<loader>`. Loader-agnostic code reaches the loader through the
 `Platform` interface (`DividedChunks.xplat()`).
 
+**Comments are purely functional.** A doc or inline comment states what that file's code does and
+why it does it, and nothing else. No roadmap, milestone numbers, "next step", "for now", "later",
+"placeholder" or future-work notes — those live in `docs/IMPLEMENTATION_PLAN.md`, never next to the
+code. A comment that only makes sense knowing what a later milestone will do is slop and gets
+deleted or rewritten to describe the file as it is. Do not reference the mod's plan, other files'
+pending work, or what some future change will replace.
+
 ### Stonecutter comments
 
 ```java

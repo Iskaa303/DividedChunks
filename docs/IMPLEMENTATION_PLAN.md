@@ -184,12 +184,16 @@ later.
 - **F1 — Sparse column storage.** Replace the dense `LevelChunkSection[]` with `ColumnStorage`,
   keeping vanilla height, so behaviour is unchanged. Split into reviewable halves:
   - **F1a** — `ColumnStorage<T>` primitive + unit tests. *(done)*
-  - **F1b** — Swap the backing store behind `ChunkAccess`/`LevelChunk`/`ProtoChunk`; the 10
-    direct `sections` sites plus `getSection`/`getSections`/`getHighestFilledSectionIndex` route
-    through `ColumnStorage`; `getSections()` returns a compatibility view. Behaviour-preserving.
-  - **F1c** — Widen `LevelHeightAccessor`/`Level` to the configured range and make block get/set
-    work at any Y on the server (verify with `/setblock` + `/data`). Client, light and rendering
-    stay on the vanilla band until F3. First in-game GameTest lives here.
+  - **F1b** — `ChunkAccessMixin` seeds `ColumnStorage` from the constructor's dense array and
+    routes `getSection(int)`/`getSections()` through it (`getSections()` returns a cached
+    compatibility view). `ChunkAccess`'s other accessors already go through those two methods,
+    so they are map-backed as well. Behaviour-preserving; the dense array stays only as the
+    construction-time seed. *(done)*
+  - **F1c** — Remove the remaining direct `this.sections` reads inside `LevelChunk`, stop the
+    dense `getSectionsCount()`-sized allocation, widen `LevelHeightAccessor`/`Level` to the
+    configured range and make block get/set work at any Y on the server (verify with `/setblock`
+    + `/data`). Client, light and rendering stay on the vanilla band until F3. First in-game
+    GameTest lives here.
 - **F2 — Storage format.** Persist arbitrary-Y cubes to disk and read them back.
 - **F3 — Network + client.** Cube packets + client cube cache + rendering at high Y.
 - **F4 — Lighting.** Cubic sky light + occlusion shadow map (+ configurable cone).
