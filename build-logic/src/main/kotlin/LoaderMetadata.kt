@@ -17,12 +17,15 @@ data class FabricManifest(
 	val environment: String,
 	val accessWidener: String,
 	val entrypoints: Map<String, List<String>>,
-	val mixins: List<String>,
+	val mixins: List<FabricMixin>,
 	val depends: Map<String, String> = emptyMap(),
 	val recommends: Map<String, String> = emptyMap(),
 	val breaks: Map<String, String> = emptyMap(),
 	val provides: List<String> = emptyList()
 )
+
+@Serializable
+data class FabricMixin(val config: String, val environment: String = "*")
 
 @Serializable
 data class ForgeManifest(

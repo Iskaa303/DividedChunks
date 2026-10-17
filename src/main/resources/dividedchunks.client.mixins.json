@@ -1,0 +1,17 @@
+{
+  "package": "net.iskaa303.dividedchunks.mixin",
+  "required": true,
+  "minVersion": "0.8",
+  "compatibilityLevel": "${java}",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "mixins": [],
+  "client": [
+    "LevelExtractorMixin",
+    "LevelRendererMixin",
+    "SectionCopyMixin",
+    "SectionOcclusionGraphMixin",
+    "ViewAreaMixin"
+  ]
+}

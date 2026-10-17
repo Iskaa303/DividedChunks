@@ -9,10 +9,12 @@
   "mixins": [
     "ChunkAccessMixin",
     "ChunkHolderMixin",
+    "FriendlyByteBufMixin",
     "LevelChunkMixin",
     "LevelMixin",
     "MinecraftServerMixin",
-    "PlayerChunkSenderMixin"
+    "PlayerChunkSenderMixin",
+    "ServerGamePacketListenerImplMixin"
   ],
   "client": []
 }

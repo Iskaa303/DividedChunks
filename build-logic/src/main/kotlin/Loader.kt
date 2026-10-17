@@ -61,7 +61,10 @@ sealed class Loader(val id: String) {
 					"fabric-gametest" to listOf("${ctx.modGroup}.${ctx.modId}.gametest.FabricGameTests"),
 					"fabric-datagen" to listOf("${ctx.modGroup}.${ctx.modId}.platform.fabric.datagen.FabricDataGeneratorEntrypoint")
 				),
-				mixins = listOf("${ctx.modId}.mixins.json"),
+				mixins = listOf(
+					FabricMixin("${ctx.modId}.mixins.json"),
+					FabricMixin("${ctx.modId}.client.mixins.json", "client")
+				),
 				depends = ctx.extension.dependencies.required.associate { it.modid.get() to it.fabricLikeVersionRange.get() },
 				recommends = ctx.extension.dependencies.optional.associate { it.modid.get() to it.fabricLikeVersionRange.get() },
 				breaks = ctx.extension.dependencies.incompatible.associate { it.modid.get() to it.fabricLikeVersionRange.get() },
@@ -116,7 +119,10 @@ sealed class Loader(val id: String) {
 					)
 				),
 				dependencies = mapOf(ctx.modId to forgeDeps),
-				mixins = listOf(ForgeMixin("${ctx.modId}.mixins.json")),
+				mixins = listOf(
+					ForgeMixin("${ctx.modId}.mixins.json"),
+					ForgeMixin("${ctx.modId}.client.mixins.json")
+				),
 				accessTransformers = listOf(ForgeAccessTransformer("aw/${ctx.stonecutter.current.version}.cfg"))
 			)
 

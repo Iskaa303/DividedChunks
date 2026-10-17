@@ -89,7 +89,12 @@ classes, like vanilla's `LevelHeightAccessor`.
 
 - Vanilla sends whole columns; we add cube packets (add/remove/update) plus a world-info handshake
   carrying the vertical range and shadow-map sizes.
-- Vanilla clients are rejected with a protocol mismatch.
+- Vanilla packs a `BlockPos` on the wire into 12 bits of Y, so anything outside ±2048 wraps: a click
+  on y=10089 reaches the server as y=1897 and is dropped as out of reach. We widen
+  `FriendlyByteBuf.writeBlockPos`/`readBlockPos` (the one seam for every block position) to
+  full-range coordinates, which makes both directions Y-correct.
+- Vanilla clients are rejected with a protocol mismatch. **Not implemented yet, and now required** —
+  the widened positions are unreadable to them.
 
 ### 3.7 Config & bundling
 
@@ -152,8 +157,14 @@ terrain.
   - F3a Per-section `CubePayload` on both loaders, sent on (re)join from `PlayerChunkSender` and
     broadcast on every out-of-band edit; the client applies sections and removals to its sparse
     column. *(done)*
-  - F3b Render out-of-band sections. `ViewArea` spans only the vanilla band, so those blocks stay
-    invisible; needs a sparse render-section mechanism (and F4 light). *(pending)*
+  - F3b Render out-of-band sections. The client renders over a fixed-height vertical window that
+    follows the player (`verticalViewDistanceCubes` above and below, plus the vanilla band) and is
+    rebuilt once the player leaves its middle half; `SectionCopy` fills a compiled section from the
+    sparse column when its index is outside the vanilla band. Out-of-band meshes are unlit until F4.
+    *(done; 26.1.2 verified in game, 26.2/26.3 compile- and mixin-application-verified only)*
+  - F3c Out-of-band interaction. `BlockPos` carries the full Y on the wire, and the build-limit gate
+    on click/break uses the configured range instead of the vanilla band, so right-click placement,
+    breaking and pick-block work out of band and persist. *(done)*
 - **F4 — Lighting.** Cubic sky light + occlusion shadow map + configurable cone.
 - **F5 — Loading/tickets.** 3D view distance, vertical loading, unload GC.
 - **F6 — World generation.** Vanilla-compat generator wrapped into a band; cubic terrain later.
