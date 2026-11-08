@@ -19,8 +19,17 @@ public interface ColumnSectionAccess {
 	/** Highest Y of a sky-damping block in the column at {@code localX}/{@code localZ}, or {@link Integer#MIN_VALUE}. */
 	int dividedchunks$skyOccluderTop(int localX, int localZ);
 
-	/** Drops the cached sky occluder heights. */
-	void dividedchunks$invalidateSkyOccluders();
+	/**
+	 * Sky light of every block in the section at {@code sectionY}, indexed
+	 * {@code localY << 8 | localZ << 4 | localX}, or {@code null} for a chunk that has no level.
+	 */
+	byte[] dividedchunks$skyLight(int sectionY);
+
+	/** Drops the cached sky occluder heights and light of this column. */
+	void dividedchunks$invalidateSky();
+
+	/** Drops the cached sky data of this column and of every column the light reach can touch. */
+	void dividedchunks$invalidateSkyAround();
 
 	/** Visits every stored section, lowest Y first. */
 	void dividedchunks$forEachSection(BiConsumer<Integer, LevelChunkSection> consumer);

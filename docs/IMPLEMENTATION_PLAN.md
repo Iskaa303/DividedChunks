@@ -54,21 +54,27 @@ classes, like vanilla's `LevelHeightAccessor`.
 - Vanilla's `sections[i]` lookups (`i = sectionY - minSectionY`) are routed to
   `column.getSection(sectionY)` by mixin.
 
-### 3.3 Sky shadow map + angled cone
+### 3.3 Sky light under cover
 
 - Per column, a 16×16 array of sky-source Y values computed over the whole column, not just
   loaded sections.
 - Unloaded columns keep a persisted per-column shadow height, so distant terrain still occludes.
-- A column is closed when its top occluding surface belongs to a closed volume, and can reopen
-  above a roof.
-- Sky light comes from a configurable cone around vertical (`skyConeAngleDegrees`, default 0 =
-  vanilla): an off-axis structure shadows partially, a closed roof blocks fully.
+- Sky light is an **air-path distance**: for a block, the shortest path through air at its own
+  height to a column that is open to the sky. Light therefore travels around cover instead of
+  stopping at the column above it: a lone or distant obstruction dims by distance only, a wide
+  roof leaves a gradient, and a sealed volume stays dark because no air path reaches it.
+- `skyConeAngleDegrees` sets the reach: one block of travel per light level per 15 degrees, so 0
+  is vanilla's 15-block shadow and the default 45 reaches 60 blocks (level = 15 − distance / 4).
+- Vertical light (a shaft through a roof) works only as far as the shaft's own column is open, so
+  a block below an overhang is lit through its neighbours, not through light falling from above.
 
 ### 3.4 Lighting
 
-- Block light: flood fill inside loaded cubes.
-- Sky light: seeded from the shadow map, propagated through open volumes.
-- Light data is section-keyed and sparse like blocks.
+- Block light: flood fill inside loaded cubes. Not implemented: emissive blocks outside the band
+  still light nothing.
+- Sky light: computed per out-of-band section from the column tops and block opacity, then cached
+  per section and dropped whenever a section or block near it changes. Light data is section-keyed
+  and sparse like blocks.
 
 ### 3.5 Storage format (custom region files)
 
@@ -165,12 +171,15 @@ terrain.
   - F3c Out-of-band interaction. `BlockPos` carries the full Y on the wire, and the build-limit gate
     on click/break uses the configured range instead of the vanilla band, so right-click placement,
     breaking and pick-block work out of band and persist. *(done)*
-- **F4 — Lighting.** Sky light under out-of-band blocks is answered by `LightEngineMixin` from a
-  per-column occluder height, because vanilla stores light for the band only and reports full sky
-  light below an out-of-band roof unless `Level.setBlock` kicked the engine.
-  - F4a Sky light occlusion. *(done)*
+- **F4 — Lighting.** Vanilla stores light for the band only and reports full sky light below an
+  out-of-band roof unless `Level.setBlock` kicked the engine, so the sky layer is answered by
+  `LightEngineMixin` from per-section light arrays.
+  - F4a Sky light. *(done)* Each out-of-band section gets a light array of air-path distances to
+    the nearest column open at that height, cached on the column. Shadows are soft by distance and
+    only an enclosed volume is dark, so a lone block or a floating island never blackens what is
+    below it.
   - F4b Block light. Emissive blocks outside the band light nothing (`getBrightness(BLOCK, …)` is 0),
-    so this needs a propagation pass of its own; `skyConeAngleDegrees` applies here too.
+    so this needs a propagation pass of its own.
 - **F5 — Loading/tickets.** 3D view distance, vertical loading, unload GC.
 - **F6 — World generation.** Vanilla-compat generator wrapped into a band; cubic terrain later.
 - **F7 — Entities/structures/biomes/spawn** at arbitrary Y.

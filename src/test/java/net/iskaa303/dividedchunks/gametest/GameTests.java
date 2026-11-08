@@ -1,5 +1,7 @@
 package net.iskaa303.dividedchunks.gametest;
 
+import net.iskaa303.dividedchunks.DividedChunks;
+import net.iskaa303.dividedchunks.core.config.DividedChunksConfig;
 import net.iskaa303.dividedchunks.core.storage.CubeRegionStorage;
 import net.iskaa303.dividedchunks.core.world.ColumnSectionAccess;
 import net.iskaa303.dividedchunks.core.world.CubeStores;
@@ -38,30 +40,81 @@ public final class GameTests {
 		helper.succeed();
 	}
 
-	/** A section applied as a cube payload must still cast a sky shadow, though the engine only knows the band. */
-	public static void skyLightUnderOutOfBandRoof(GameTestHelper helper) {
+	/**
+	 * Cover dims by distance instead of blackening: a lone block barely registers, a wide roof only dims,
+	 * and only an enclosed volume goes dark.
+	 */
+	public static void skyLightUnderCover(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		int roofY = 10005;
-		int x = 500 * 16;
-		int z = 500 * 16;
-		LevelChunkSection section = new LevelChunkSection(level.palettedContainerFactory());
-		section.setBlockState(0, Math.floorMod(roofY, 16), 0, Blocks.STONE.defaultBlockState());
-		LevelChunk chunk = level.getChunk(500, 500);
-		((ColumnSectionAccess) chunk).dividedchunks$putSection(SectionPos.blockToSectionCoord(roofY), section);
+		DividedChunksConfig.DimensionConfig config = DividedChunks.config()
+				.forDimension(level.dimension().identifier().toString());
+		int savedCone = config.skyConeAngleDegrees;
+		int y = 5000;
+		try {
+			config.skyConeAngleDegrees = 45;
+			int loneX = 900 * 16 + 8;
+			int loneZ = 900 * 16 + 8;
+			level.getChunk(900, 900)
+					.setBlockState(new BlockPos(loneX, y + 5000, loneZ), Blocks.STONE.defaultBlockState(), 2);
+			assertSkyLight(helper, "under a single block 5000 blocks up", level, loneX, y, loneZ, 15);
 
-		int above = level.getBrightness(LightLayer.SKY, new BlockPos(x, roofY + 1, z));
-		int below = level.getBrightness(LightLayer.SKY, new BlockPos(x, roofY - 1, z));
-		int beside = level.getBrightness(LightLayer.SKY, new BlockPos(x + 1, roofY - 1, z));
-		if (above != 15) {
-			throw helper.assertionException("sky light above the out-of-band roof is %s, expected 15".formatted(above));
-		}
-		if (below != 0) {
-			throw helper.assertionException("sky light under the out-of-band roof is %s, expected 0".formatted(below));
-		}
-		if (beside != 15) {
-			throw helper.assertionException("sky light beside the out-of-band roof is %s, expected 15".formatted(beside));
+			int roofX = 910 * 16 + 8;
+			int roofZ = 910 * 16 + 8;
+			for (int dx = -1; dx <= 1; dx++) {
+				for (int dz = -1; dz <= 1; dz++) {
+					((ColumnSectionAccess) level.getChunk(910 + dx, 910 + dz))
+							.dividedchunks$putSection(625, stoneSection(level));
+				}
+			}
+			int underRoof = level.getBrightness(LightLayer.SKY, new BlockPos(roofX, 9999, roofZ));
+			if (underRoof <= 0 || underRoof >= 15) {
+				throw helper.assertionException(
+						"sky light under a 3x3 chunk roof is %s, expected a dim value between 1 and 14".formatted(underRoof));
+			}
+			assertSkyLight(helper, "beside the roof", level, roofX + 40, 9999, roofZ, 15);
+
+			int boxX = 920 * 16 + 8;
+			int boxZ = 920 * 16 + 8;
+			LevelChunk boxChunk = level.getChunk(920, 920);
+			for (int dx = -2; dx <= 2; dx++) {
+				for (int dy = 0; dy <= 4; dy++) {
+					for (int dz = -2; dz <= 2; dz++) {
+						if (Math.abs(dx) == 2 || Math.abs(dz) == 2 || dy == 0 || dy == 4) {
+							boxChunk.setBlockState(new BlockPos(boxX + dx, y + dy, boxZ + dz),
+									Blocks.STONE.defaultBlockState(), 2);
+						}
+					}
+				}
+			}
+			assertSkyLight(helper, "inside a sealed box", level, boxX, y + 2, boxZ, 0);
+
+			config.skyConeAngleDegrees = 0;
+			((ColumnSectionAccess) level.getChunk(910, 910)).dividedchunks$invalidateSkyAround();
+			assertSkyLight(helper, "under the roof with a vanilla reach", level, roofX, 9999, roofZ, 0);
+		} finally {
+			config.skyConeAngleDegrees = savedCone;
 		}
 		helper.succeed();
+	}
+
+	private static LevelChunkSection stoneSection(ServerLevel level) {
+		LevelChunkSection section = new LevelChunkSection(level.palettedContainerFactory());
+		for (int localX = 0; localX < 16; localX++) {
+			for (int localY = 0; localY < 16; localY++) {
+				for (int localZ = 0; localZ < 16; localZ++) {
+					section.setBlockState(localX, localY, localZ, Blocks.STONE.defaultBlockState());
+				}
+			}
+		}
+		return section;
+	}
+
+	private static void assertSkyLight(GameTestHelper helper, String what, ServerLevel level, int x, int y, int z,
+			int expected) {
+		int light = level.getBrightness(LightLayer.SKY, new BlockPos(x, y, z));
+		if (light != expected) {
+			throw helper.assertionException("%s: sky light is %s, expected %s".formatted(what, light, expected));
+		}
 	}
 
 	/** Saving a chunk must move its whole column, band included, into the dividedchunks store. */

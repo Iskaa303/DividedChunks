@@ -33,8 +33,8 @@ public final class NeoforgeGameTests {
 				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "block_outside_build_height"),
 				new InlineGameTest(data, GameTests::blockOutsideBuildHeight));
 		event.registerTest(
-				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "sky_light_under_out_of_band_roof"),
-				new InlineGameTest(data, GameTests::skyLightUnderOutOfBandRoof));
+				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "sky_light_under_cover"),
+				new InlineGameTest(data, GameTests::skyLightUnderCover));
 		event.registerTest(
 				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "save_stores_whole_column"),
 				new InlineGameTest(data, GameTests::saveStoresWholeColumn));

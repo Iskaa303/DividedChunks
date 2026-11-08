@@ -17,9 +17,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Darkens sky light under blocks outside the vanilla band, which vanilla stores no light for: without
- * a kick from {@code Level.setBlock} it reports full sky light under an out-of-band roof, as sections
- * arriving as cube payloads do.
+ * Answers sky light outside the vanilla band, which vanilla stores no data for, from the column's
+ * cached section light.
  */
 @Mixin(LightEngine.class)
 public abstract class LightEngineMixin {
@@ -46,9 +45,13 @@ public abstract class LightEngineMixin {
 		if (chunk == null) {
 			return;
 		}
-		int top = ((ColumnSectionAccess) chunk).dividedchunks$skyOccluderTop(pos.getX() & 15, pos.getZ() & 15);
-		if (pos.getY() < top) {
-			cir.setReturnValue(0);
+		byte[] light = ((ColumnSectionAccess) chunk).dividedchunks$skyLight(sectionY);
+		if (light == null) {
+			return;
+		}
+		int value = light[(pos.getY() & 15) << 8 | (pos.getZ() & 15) << 4 | (pos.getX() & 15)];
+		if (value < cir.getReturnValue()) {
+			cir.setReturnValue((int) value);
 		}
 	}
 }

@@ -53,8 +53,8 @@ public final class DividedChunksConfig {
 	private static final String COMMENT_MAX_Y =
 			"Highest block Y that exists. Same accepted range and clamping as minY (see above).";
 	private static final String COMMENT_SKY_CONE =
-			"Half-angle of the sky-light cone in degrees. 0 = straight down (vanilla shadow); larger values\n"
-					+ "let sky light arrive from the sides, so a distant structure only partially shadows the ground.";
+			"How far sky light reaches sideways, in blocks of travel per light level: every 15 degrees\n"
+					+ "adds one, so 0 is vanilla's 15 block shadow and the default 45 reaches 60 blocks.";
 
 	private static final TomlWriter WRITER = new TomlWriter();
 
@@ -179,7 +179,7 @@ public final class DividedChunksConfig {
 
 		public int minY = DEFAULT_MIN_Y;
 		public int maxY = DEFAULT_MAX_Y;
-		public int skyConeAngleDegrees = 0;
+		public int skyConeAngleDegrees = 45;
 
 		private void readFrom(UnmodifiableConfig toml) {
 			this.minY = toml.getIntOrElse(KEY_MIN_Y, this.minY);

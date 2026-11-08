@@ -1,8 +1,15 @@
 package net.iskaa303.dividedchunks.mixin;
 
+import net.iskaa303.dividedchunks.DividedChunks;
+import net.iskaa303.dividedchunks.core.light.ChunkBlocks;
+import net.iskaa303.dividedchunks.core.light.SkyLight;
 import net.iskaa303.dividedchunks.core.world.ColumnSectionAccess;
 import net.iskaa303.dividedchunks.core.world.ColumnStorage;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,6 +23,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 /**
@@ -39,6 +48,10 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 
 	@Unique
 	private int[] dividedchunks$skyTops;
+
+	/** Section Y to its sky light; a concurrent map because the client renderer queries it too. */
+	@Unique
+	private final Map<Integer, byte[]> dividedchunks$skyLight = new ConcurrentHashMap<>();
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void dividedchunks$seedSections(CallbackInfo ci) {
@@ -70,7 +83,7 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	public LevelChunkSection dividedchunks$putSection(int sectionY, LevelChunkSection section) {
 		LevelChunkSection previous = this.dividedchunks$sections.put(sectionY, section);
 		this.dividedchunks$sectionView = null;
-		this.dividedchunks$skyTops = null;
+		this.dividedchunks$invalidateSkyAround();
 		this.dividedchunks$syncDense(sectionY, section);
 		return previous;
 	}
@@ -79,7 +92,7 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	public LevelChunkSection dividedchunks$removeSection(int sectionY) {
 		LevelChunkSection previous = this.dividedchunks$sections.remove(sectionY);
 		this.dividedchunks$sectionView = null;
-		this.dividedchunks$skyTops = null;
+		this.dividedchunks$invalidateSkyAround();
 		this.dividedchunks$syncDense(sectionY, null);
 		return previous;
 	}
@@ -108,8 +121,62 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	}
 
 	@Override
-	public void dividedchunks$invalidateSkyOccluders() {
+	public void dividedchunks$invalidateSky() {
 		this.dividedchunks$skyTops = null;
+		this.dividedchunks$skyLight.clear();
+	}
+
+	@Override
+	public void dividedchunks$invalidateSkyAround() {
+		this.dividedchunks$invalidateSky();
+		if (!((Object) this instanceof LevelChunk chunk)) {
+			return;
+		}
+		Level level = chunk.getLevel();
+		ChunkPos pos = chunk.getPos();
+		int blocksPerLevel = SkyLight.blocksPerLevel(
+				DividedChunks.config().forDimension(level.dimension().identifier().toString()).skyConeAngleDegrees);
+		for (int dx = -blocksPerLevel; dx <= blocksPerLevel; dx++) {
+			for (int dz = -blocksPerLevel; dz <= blocksPerLevel; dz++) {
+				if (dx == 0 && dz == 0) {
+					continue;
+				}
+				LevelChunk neighbour = level.getChunkSource().getChunkNow(pos.x() + dx, pos.z() + dz);
+				if (neighbour != null) {
+					((ColumnSectionAccess) neighbour).dividedchunks$invalidateSky();
+				}
+			}
+		}
+	}
+
+	@Override
+	public byte[] dividedchunks$skyLight(int sectionY) {
+		if (!((Object) this instanceof LevelChunk chunk)) {
+			return null;
+		}
+		byte[] light = this.dividedchunks$skyLight.get(sectionY);
+		if (light != null) {
+			return light;
+		}
+		Level level = chunk.getLevel();
+		int blocksPerLevel = SkyLight.blocksPerLevel(
+				DividedChunks.config().forDimension(level.dimension().identifier().toString()).skyConeAngleDegrees);
+		light = SkyLight.compute(chunk.getPos().getMinBlockX(), chunk.getPos().getMinBlockZ(), sectionY << 4,
+				blocksPerLevel,
+				(worldX, worldZ) -> this.dividedchunks$skyOccluderTop(level, worldX, worldZ),
+				new ChunkBlocks(level));
+		this.dividedchunks$skyLight.put(sectionY, light);
+		return light;
+	}
+
+	/** A column of an unloaded chunk stores no blocks, so it cannot occlude. */
+	@Unique
+	private int dividedchunks$skyOccluderTop(Level level, int worldX, int worldZ) {
+		LevelChunk chunk = level.getChunkSource()
+				.getChunkNow(SectionPos.blockToSectionCoord(worldX), SectionPos.blockToSectionCoord(worldZ));
+		return chunk == null
+				? Integer.MIN_VALUE
+				: ((ColumnSectionAccess) chunk).dividedchunks$skyOccluderTop(worldX & 15, worldZ & 15);
 	}
 
 	/** Scans the highest sections first, so the first damping block found per column is its top. */

@@ -23,7 +23,7 @@ class DividedChunksConfigTest {
 		assertTrue(text.contains("DividedChunks configuration"), "file should have a header comment");
 		assertTrue(text.contains("#"), "file should contain comments");
 		assertTrue(text.contains("minY = -2147483648"), "default minY should be written: \n" + text);
-		assertTrue(text.contains("skyConeAngleDegrees = 0"), "default sky cone angle should be written");
+		assertTrue(text.contains("skyConeAngleDegrees = 45"), "default sky reach should be written");
 
 		assertEquals(DividedChunksConfig.DEFAULT_MIN_Y, config.defaults.minY);
 		assertEquals(DividedChunksConfig.DEFAULT_MAX_Y, config.defaults.maxY);
