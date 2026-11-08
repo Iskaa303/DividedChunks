@@ -11,5 +11,10 @@ public class FabricGameTests {
 	public void blockOutsideBuildHeight(GameTestHelper helper) {
 		GameTests.blockOutsideBuildHeight(helper);
 	}
+
+	@GameTest(structure = "minecraft:empty", maxTicks = 20)
+	public void skyLightUnderOutOfBandRoof(GameTestHelper helper) {
+		GameTests.skyLightUnderOutOfBandRoof(helper);
+	}
 }
 *///?}

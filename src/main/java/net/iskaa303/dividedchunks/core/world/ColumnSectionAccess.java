@@ -13,4 +13,10 @@ public interface ColumnSectionAccess {
 
 	/** Removes the section at {@code sectionY}, returning the previous section or {@code null}. */
 	LevelChunkSection dividedchunks$removeSection(int sectionY);
+
+	/** Highest Y of a sky-damping block in the column at {@code localX}/{@code localZ}, or {@link Integer#MIN_VALUE}. */
+	int dividedchunks$skyOccluderTop(int localX, int localZ);
+
+	/** Drops the cached sky occluder heights. */
+	void dividedchunks$invalidateSkyOccluders();
 }

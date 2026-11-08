@@ -1,6 +1,6 @@
 package net.iskaa303.dividedchunks.api.util;
 
-/** Block <-> cube coordinate conversions; negative coordinates round like positive ones. */
+/** Block/cube coordinate conversions; negative coordinates round like positive ones. */
 public final class Coords {
 
 	/** Cube side length in blocks; same as a vanilla chunk section. */

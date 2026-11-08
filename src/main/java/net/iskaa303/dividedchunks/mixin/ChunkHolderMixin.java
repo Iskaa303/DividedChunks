@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * {@link ChunkHolder} tracks changed blocks in a dense per-section array sized to the section band.
- * Block changes outside that band are skipped here (there is nothing for the client to receive yet).
+ * Changes outside that band are skipped here; they reach clients as a cube payload instead.
  */
 @Mixin(ChunkHolder.class)
 public abstract class ChunkHolderMixin {

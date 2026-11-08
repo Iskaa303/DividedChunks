@@ -93,8 +93,9 @@ classes, like vanilla's `LevelHeightAccessor`.
   on y=10089 reaches the server as y=1897 and is dropped as out of reach. We widen
   `FriendlyByteBuf.writeBlockPos`/`readBlockPos` (the one seam for every block position) to
   full-range coordinates, which makes both directions Y-correct.
-- Vanilla clients are rejected with a protocol mismatch. **Not implemented yet, and now required** —
-  the widened positions are unreadable to them.
+- A client without the mod cannot interoperate: the widened positions leave extra bytes in a packet
+  frame, so the connection dies at the first block position instead of corrupting state. NeoForge
+  additionally denies such a client through FML's required-payload negotiation.
 
 ### 3.7 Config & bundling
 
@@ -165,7 +166,12 @@ terrain.
   - F3c Out-of-band interaction. `BlockPos` carries the full Y on the wire, and the build-limit gate
     on click/break uses the configured range instead of the vanilla band, so right-click placement,
     breaking and pick-block work out of band and persist. *(done)*
-- **F4 — Lighting.** Cubic sky light + occlusion shadow map + configurable cone.
+- **F4 — Lighting.** Sky light under out-of-band blocks is answered by `LightEngineMixin` from a
+  per-column occluder height, because vanilla stores light for the band only and reports full sky
+  light below an out-of-band roof unless `Level.setBlock` kicked the engine.
+  - F4a Sky light occlusion. *(done)*
+  - F4b Block light. Emissive blocks outside the band light nothing (`getBrightness(BLOCK, …)` is 0),
+    so this needs a propagation pass of its own; `skyConeAngleDegrees` applies here too.
 - **F5 — Loading/tickets.** 3D view distance, vertical loading, unload GC.
 - **F6 — World generation.** Vanilla-compat generator wrapped into a band; cubic terrain later.
 - **F7 — Entities/structures/biomes/spawn** at arbitrary Y.
@@ -179,6 +185,11 @@ terrain.
   the sources. Mitigation: grep the compiled sources per milestone; keep the change behind a small
   accessor seam.
 - **Light engine rewrite** is the largest single risk.
+- **Section position ceiling.** `SectionPos` packs Y into 20 bits, so section Y wraps beyond ±524288
+  (±8.4M blocks) even though block positions carry the full int range.
+- **Render section allocation.** Centring the render window on the player adds
+  `2 * verticalViewDistanceCubes` section Y levels to the vanilla band, about 67% more render
+  sections at the default radius of 8.
 - **World format lock-in.** Version the region index and cube codec from day one.
 - **Performance.** Naive sparse maps can cost more than vanilla arrays; benchmark.
 
@@ -191,3 +202,5 @@ terrain.
 3. **Lighting:** an angled sky cone, configurable per dimension; an occlusion-aware shadow map
    over the full column, persisted for unloaded columns.
 4. **Worldgen:** vanilla-compat band first; the rest is air until the cubic generator.
+5. **Protocol guard:** no custom handshake. A side without the mod, or with another payload version,
+   already fails on the widened block positions; only NeoForge rejects it cleanly, through FML.

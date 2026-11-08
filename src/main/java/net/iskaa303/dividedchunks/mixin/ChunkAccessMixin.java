@@ -13,6 +13,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Holds {@link ChunkAccess}'s sections in a sparse {@link ColumnStorage} keyed by section Y: the
  * constructor array seeds it, and {@code getSection}/{@code getSections} read it
@@ -31,6 +35,9 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 
 	@Unique
 	private LevelChunkSection[] dividedchunks$sectionView;
+
+	@Unique
+	private int[] dividedchunks$skyTops;
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void dividedchunks$seedSections(CallbackInfo ci) {
@@ -62,6 +69,7 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	public LevelChunkSection dividedchunks$putSection(int sectionY, LevelChunkSection section) {
 		LevelChunkSection previous = this.dividedchunks$sections.put(sectionY, section);
 		this.dividedchunks$sectionView = null;
+		this.dividedchunks$skyTops = null;
 		return previous;
 	}
 
@@ -69,7 +77,54 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	public LevelChunkSection dividedchunks$removeSection(int sectionY) {
 		LevelChunkSection previous = this.dividedchunks$sections.remove(sectionY);
 		this.dividedchunks$sectionView = null;
+		this.dividedchunks$skyTops = null;
 		return previous;
+	}
+
+	@Override
+	public int dividedchunks$skyOccluderTop(int localX, int localZ) {
+		int[] tops = this.dividedchunks$skyTops;
+		if (tops == null) {
+			tops = this.dividedchunks$skyTops = this.dividedchunks$computeSkyTops();
+		}
+		return tops[localZ << 4 | localX];
+	}
+
+	@Override
+	public void dividedchunks$invalidateSkyOccluders() {
+		this.dividedchunks$skyTops = null;
+	}
+
+	/** Scans the highest sections first, so the first damping block found per column is its top. */
+	@Unique
+	private int[] dividedchunks$computeSkyTops() {
+		int[] tops = new int[256];
+		Arrays.fill(tops, Integer.MIN_VALUE);
+		List<Integer> sectionYs = new ArrayList<>(this.dividedchunks$sections.size());
+		this.dividedchunks$sections.forEach((sectionY, section) -> sectionYs.add(sectionY));
+		for (int i = sectionYs.size() - 1; i >= 0; i--) {
+			int sectionY = sectionYs.get(i);
+			LevelChunkSection section = this.dividedchunks$sections.get(sectionY);
+			if (section == null || section.hasOnlyAir()) {
+				continue;
+			}
+			int baseY = sectionY << 4;
+			for (int localZ = 0; localZ < 16; localZ++) {
+				for (int localX = 0; localX < 16; localX++) {
+					int index = localZ << 4 | localX;
+					if (tops[index] != Integer.MIN_VALUE) {
+						continue;
+					}
+					for (int localY = 15; localY >= 0; localY--) {
+						if (section.getBlockState(localX, localY, localZ).getLightDampening() > 0) {
+							tops[index] = baseY + localY;
+							break;
+						}
+					}
+				}
+			}
+		}
+		return tops;
 	}
 
 	@Unique

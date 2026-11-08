@@ -14,7 +14,8 @@
     "LevelMixin",
     "MinecraftServerMixin",
     "PlayerChunkSenderMixin",
-    "ServerGamePacketListenerImplMixin"
+    "ServerGamePacketListenerImplMixin",
+    "LightEngineMixin"
   ],
   "client": []
 }
