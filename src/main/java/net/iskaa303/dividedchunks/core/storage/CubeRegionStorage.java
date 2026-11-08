@@ -15,6 +15,9 @@ import java.util.Optional;
  */
 public final class CubeRegionStorage implements CubeStorage {
 
+	/** Section Y reserved for the chunk metadata payload; a real section Y never reaches it. */
+	public static final int CHUNK_TAG_Y = Integer.MIN_VALUE;
+
 	private static final int DEFAULT_MAX_OPEN_REGIONS = 64;
 
 	private final Path directory;
@@ -89,6 +92,15 @@ public final class CubeRegionStorage implements CubeStorage {
 			region = openRegion(key, regionX, regionZ, file);
 		}
 		return region.readColumn(chunkX, chunkZ);
+	}
+
+	/** The chunk metadata payload stored for one column, if any. */
+	public synchronized Optional<byte[]> getChunkTag(int chunkX, int chunkZ) {
+		return get(new CubePos(chunkX, CHUNK_TAG_Y, chunkZ));
+	}
+
+	public synchronized void putChunkTag(int chunkX, int chunkZ, byte[] data) {
+		put(new CubePos(chunkX, CHUNK_TAG_Y, chunkZ), data);
 	}
 
 	@Override

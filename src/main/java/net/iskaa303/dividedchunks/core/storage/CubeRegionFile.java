@@ -138,7 +138,7 @@ final class CubeRegionFile implements AutoCloseable {
 	synchronized Map<Integer, byte[]> readColumn(int chunkX, int chunkZ) {
 		Map<Integer, byte[]> result = new HashMap<>();
 		for (CubePos pos : this.index.keySet()) {
-			if (pos.x() == chunkX && pos.z() == chunkZ) {
+			if (pos.x() == chunkX && pos.z() == chunkZ && pos.y() != CubeRegionStorage.CHUNK_TAG_Y) {
 				get(pos).ifPresent(data -> result.put(pos.y(), data));
 			}
 		}

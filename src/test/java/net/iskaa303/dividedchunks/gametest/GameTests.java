@@ -8,13 +8,18 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 /**
@@ -73,6 +78,12 @@ public final class GameTests {
 		farSection.setBlockState(0, Math.floorMod(farY, 16), 0, Blocks.DIRT.defaultBlockState());
 		((ColumnSectionAccess) chunk).dividedchunks$putSection(SectionPos.blockToSectionCoord(farY), farSection);
 
+		Identifier dimension = level.dimension().identifier();
+		Path regionFile = level.getServer().getWorldPath(LevelResource.ROOT)
+				.resolve("dimensions").resolve(dimension.getNamespace()).resolve(dimension.getPath())
+				.resolve("region").resolve("r." + (chunkX >> 5) + "." + (chunkZ >> 5) + ".mca");
+		long sizeBeforeSave = regionSize(regionFile);
+
 		level.getChunkSource().save(true);
 
 		CubeRegionStorage store = CubeStores.get(level);
@@ -92,14 +103,25 @@ public final class GameTests {
 
 		CompoundTag vanillaTag = level.getChunkSource().chunkMap.read(new ChunkPos(chunkX, chunkZ)).join().orElse(null);
 		if (vanillaTag == null) {
-			throw helper.assertionException("the vanilla region file holds no entry for the chunk");
+			throw helper.assertionException("the chunk has no stored metadata tag");
 		}
 		if (vanillaTag.contains("sections")) {
-			throw helper.assertionException("the vanilla region file still stores the chunk's sections");
+			throw helper.assertionException("the stored metadata tag still carries sections");
 		}
-		if (vanillaTag.contains("isLightOn")) {
-			throw helper.assertionException("the vanilla region file still stores the light flag");
+		if (store.getChunkTag(chunkX, chunkZ).isEmpty()) {
+			throw helper.assertionException("the chunk metadata is not in the dividedchunks store");
+		}
+		if (regionSize(regionFile) != sizeBeforeSave) {
+			throw helper.assertionException("saving wrote a vanilla region file: " + regionFile);
 		}
 		helper.succeed();
+	}
+
+	private static long regionSize(Path path) {
+		try {
+			return Files.exists(path) ? Files.size(path) : -1;
+		} catch (IOException e) {
+			return -2;
+		}
 	}
 }

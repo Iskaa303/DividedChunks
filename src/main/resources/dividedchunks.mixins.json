@@ -9,6 +9,7 @@
   "mixins": [
     "ChunkAccessMixin",
     "ChunkHolderMixin",
+    "ChunkMapAccess",
     "FriendlyByteBufMixin",
     "LevelChunkMixin",
     "LevelMixin",
@@ -16,6 +17,7 @@
     "PlayerChunkSenderMixin",
     "ServerGamePacketListenerImplMixin",
     "SerializableChunkDataMixin",
+    "SimpleRegionStorageMixin",
     "LightEngineMixin"
   ],
   "client": []
