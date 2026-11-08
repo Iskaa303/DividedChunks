@@ -2,6 +2,8 @@ package net.iskaa303.dividedchunks.core.world;
 
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
+import java.util.function.BiConsumer;
+
 /** Sparse section access that {@code ChunkAccessMixin} adds to {@code ChunkAccess}. */
 public interface ColumnSectionAccess {
 
@@ -19,4 +21,7 @@ public interface ColumnSectionAccess {
 
 	/** Drops the cached sky occluder heights. */
 	void dividedchunks$invalidateSkyOccluders();
+
+	/** Visits every stored section, lowest Y first. */
+	void dividedchunks$forEachSection(BiConsumer<Integer, LevelChunkSection> consumer);
 }

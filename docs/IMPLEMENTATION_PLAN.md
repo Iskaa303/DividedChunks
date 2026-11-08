@@ -79,11 +79,11 @@ classes, like vanilla's `LevelHeightAccessor`.
   per-record codec id leaves room for LZ4 or zstd later.
 - The index is rebuilt on open by scanning record headers; an interrupted trailing write is
   dropped, and dead space past a threshold triggers compaction.
-- Near term (F2, shipped): vanilla still owns the band — `.mca` keeps its sections, heightmaps,
-  block entities and entities — and `.dcr` holds only sections outside the band, so a world with
-  no out-of-band blocks is a vanilla world on disk.
-- Long term (F9): `.dcr` owns the whole column; vanilla stops writing sections, and an existing
-  world is converted by reading its `.mca` band into `.dcr` without regeneration.
+- `.dcr` owns the whole column (F9): every section, band included, is written when the chunk is
+  saved and read back when it loads. `.mca` keeps the chunk metadata only — heightmaps, block
+  entities, entities, structures, ticks, post-processing — and its `sections`/`isLightOn` tags are
+  dropped on save, so a chunk that has no `.dcr` records yet keeps the sections vanilla loaded and
+  is converted by its next save.
 
 ### 3.6 Network
 
@@ -176,8 +176,9 @@ terrain.
 - **F6 — World generation.** Vanilla-compat generator wrapped into a band; cubic terrain later.
 - **F7 — Entities/structures/biomes/spawn** at arbitrary Y.
 - **F8 — Compatibility & API polish.** Events, optional-mod hooks, API docs.
-- **F9 — Full-column storage & `.mca`→`.dcr` conversion.** A serialization change on the F2
-  format: `.dcr` owns the whole column and an existing `.mca` band is imported.
+- **F9 — Full-column storage & `.mca`→`.dcr` conversion.** *(done)* `.dcr` owns every section; a
+  chunk without `.dcr` records keeps vanilla's sections and is converted on its next save. Light
+  is recomputed on load because the light flag is dropped with the sections.
 
 ## 7. Risks
 

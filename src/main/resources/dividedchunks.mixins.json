@@ -15,6 +15,7 @@
     "MinecraftServerMixin",
     "PlayerChunkSenderMixin",
     "ServerGamePacketListenerImplMixin",
+    "SerializableChunkDataMixin",
     "LightEngineMixin"
   ],
   "client": []

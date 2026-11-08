@@ -35,6 +35,9 @@ public final class NeoforgeGameTests {
 		event.registerTest(
 				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "sky_light_under_out_of_band_roof"),
 				new InlineGameTest(data, GameTests::skyLightUnderOutOfBandRoof));
+		event.registerTest(
+				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "save_stores_whole_column"),
+				new InlineGameTest(data, GameTests::saveStoresWholeColumn));
 	}
 }
 //?}

@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 /**
  * Holds {@link ChunkAccess}'s sections in a sparse {@link ColumnStorage} keyed by section Y: the
@@ -70,6 +71,7 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 		LevelChunkSection previous = this.dividedchunks$sections.put(sectionY, section);
 		this.dividedchunks$sectionView = null;
 		this.dividedchunks$skyTops = null;
+		this.dividedchunks$syncDense(sectionY, section);
 		return previous;
 	}
 
@@ -78,7 +80,22 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 		LevelChunkSection previous = this.dividedchunks$sections.remove(sectionY);
 		this.dividedchunks$sectionView = null;
 		this.dividedchunks$skyTops = null;
+		this.dividedchunks$syncDense(sectionY, null);
 		return previous;
+	}
+
+	@Override
+	public void dividedchunks$forEachSection(BiConsumer<Integer, LevelChunkSection> consumer) {
+		this.dividedchunks$sections.forEach(consumer);
+	}
+
+	/** Vanilla still reads the band array directly in places, so it has to match the sparse store. */
+	@Unique
+	private void dividedchunks$syncDense(int sectionY, LevelChunkSection section) {
+		int index = sectionY - ((ChunkAccess) (Object) this).getMinSectionY();
+		if (index >= 0 && index < this.sections.length) {
+			this.sections[index] = section;
+		}
 	}
 
 	@Override
