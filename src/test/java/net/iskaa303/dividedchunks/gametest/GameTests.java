@@ -12,6 +12,9 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.storage.LevelResource;
@@ -161,11 +164,52 @@ public final class GameTests {
 		if (vanillaTag.contains("sections")) {
 			throw helper.assertionException("the stored metadata tag still carries sections");
 		}
-		if (store.getChunkTag(chunkX, chunkZ).isEmpty()) {
+		if (store.getTag(CubeRegionStorage.CHUNK_TAG_Y, chunkX, chunkZ).isEmpty()) {
 			throw helper.assertionException("the chunk metadata is not in the dividedchunks store");
 		}
 		if (regionSize(regionFile) != sizeBeforeSave) {
 			throw helper.assertionException("saving wrote a vanilla region file: " + regionFile);
+		}
+		helper.succeed();
+	}
+
+	/** Saving must move a column's entities and points of interest into the dividedchunks store too. */
+	public static void saveStoresEntitiesAndPoi(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		int chunkX = 720;
+		int chunkZ = 720;
+		level.getChunk(chunkX, chunkZ);
+		BlockPos poiPos = new BlockPos(chunkX * 16 + 4, 100, chunkZ * 16 + 4);
+		level.setBlock(poiPos, Blocks.LECTERN.defaultBlockState(), 3);
+		ItemEntity item = new ItemEntity(level, poiPos.getX() + 0.5, poiPos.getY() + 1, poiPos.getZ() + 0.5,
+				new ItemStack(Items.STONE));
+		if (!level.addFreshEntity(item)) {
+			throw helper.assertionException("the item entity was not added to the level");
+		}
+
+		Identifier dimension = level.dimension().identifier();
+		Path folder = level.getServer().getWorldPath(LevelResource.ROOT)
+				.resolve("dimensions").resolve(dimension.getNamespace()).resolve(dimension.getPath());
+		String region = "r." + (chunkX >> 5) + "." + (chunkZ >> 5) + ".mca";
+		Path entityFile = folder.resolve("entities").resolve(region);
+		Path poiFile = folder.resolve("poi").resolve(region);
+		long entitySize = regionSize(entityFile);
+		long poiSize = regionSize(poiFile);
+
+		level.save(null, true, false);
+
+		CubeRegionStorage store = CubeStores.get(level);
+		if (store.getTag(CubeRegionStorage.ENTITY_TAG_Y, chunkX, chunkZ).isEmpty()) {
+			throw helper.assertionException("the entities are not in the dividedchunks store");
+		}
+		if (store.getTag(CubeRegionStorage.POI_TAG_Y, chunkX, chunkZ).isEmpty()) {
+			throw helper.assertionException("the points of interest are not in the dividedchunks store");
+		}
+		if (regionSize(entityFile) != entitySize) {
+			throw helper.assertionException("saving wrote a vanilla entity file: " + entityFile);
+		}
+		if (regionSize(poiFile) != poiSize) {
+			throw helper.assertionException("saving wrote a vanilla point-of-interest file: " + poiFile);
 		}
 		helper.succeed();
 	}

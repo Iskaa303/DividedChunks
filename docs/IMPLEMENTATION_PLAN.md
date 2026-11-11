@@ -85,10 +85,11 @@ classes, like vanilla's `LevelHeightAccessor`.
   per-record codec id leaves room for LZ4 or zstd later.
 - The index is rebuilt on open by scanning record headers; an interrupted trailing write is
   dropped, and dead space past a threshold triggers compaction.
-- Chunk data lives only in `.dcr` (F9): every section of the column, band included, plus the chunk
-  metadata tag (currently stripped of sections and light) are records in the same store. Chunk rows
-  of `.mca` are neither read nor written; a chunk without a stored tag does not exist. Point of
-  interest and entity files are still vanilla `.mca` stores.
+- Chunk data lives only in `.dcr` (F9): every section of the column, band included, plus the column
+  payloads - chunk metadata, entities and points of interest - are records in the same store, told
+  apart by a reserved section Y (`Integer.MIN_VALUE`, `+1`, `+2`). No `.mca` is read or written for
+  any of them; a `.mca` left by an earlier world is ignored, so converting a vanilla world is a
+  later milestone.
 
 ### 3.6 Network
 
@@ -184,9 +185,10 @@ terrain.
 - **F6 — World generation.** Vanilla-compat generator wrapped into a band; cubic terrain later.
 - **F7 — Entities/structures/biomes/spawn** at arbitrary Y.
 - **F8 — Compatibility & API polish.** Events, optional-mod hooks, API docs.
-- **F9 — Full-column storage.** *(done)* Chunk sections and the chunk metadata tag are records of
-  the same `.dcr` store; vanilla's chunk `.mca` rows are never read or written, and light is
-  recomputed on load. Converting an existing vanilla world (`.mca` → `.dcr`) is still to come.
+- **F9 — Full-column storage.** *(done)* Chunk sections, the chunk metadata tag, entities and
+  points of interest are records of the same `.dcr` store; nothing writes `.mca` any more and light
+  is recomputed on load. Converting an existing vanilla world (`.mca` → `.dcr`) is a later
+  milestone.
 
 ## 7. Risks
 

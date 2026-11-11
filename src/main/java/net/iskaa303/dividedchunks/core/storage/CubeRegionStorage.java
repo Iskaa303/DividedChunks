@@ -15,8 +15,19 @@ import java.util.Optional;
  */
 public final class CubeRegionStorage implements CubeStorage {
 
-	/** Section Y reserved for the chunk metadata payload; a real section Y never reaches it. */
+	/** Section Y of the chunk metadata payload. */
 	public static final int CHUNK_TAG_Y = Integer.MIN_VALUE;
+
+	/** Section Y of a column's entity payload. */
+	public static final int ENTITY_TAG_Y = Integer.MIN_VALUE + 1;
+
+	/** Section Y of a column's point-of-interest payload. */
+	public static final int POI_TAG_Y = Integer.MIN_VALUE + 2;
+
+	/** Whether this section Y holds a column payload instead of a section. */
+	public static boolean isTagY(int sectionY) {
+		return sectionY >= CHUNK_TAG_Y && sectionY <= POI_TAG_Y;
+	}
 
 	private static final int DEFAULT_MAX_OPEN_REGIONS = 64;
 
@@ -94,13 +105,13 @@ public final class CubeRegionStorage implements CubeStorage {
 		return region.readColumn(chunkX, chunkZ);
 	}
 
-	/** The chunk metadata payload stored for one column, if any. */
-	public synchronized Optional<byte[]> getChunkTag(int chunkX, int chunkZ) {
-		return get(new CubePos(chunkX, CHUNK_TAG_Y, chunkZ));
+	/** The stored payload of one kind at a column, if any. */
+	public synchronized Optional<byte[]> getTag(int tagY, int chunkX, int chunkZ) {
+		return get(new CubePos(chunkX, tagY, chunkZ));
 	}
 
-	public synchronized void putChunkTag(int chunkX, int chunkZ, byte[] data) {
-		put(new CubePos(chunkX, CHUNK_TAG_Y, chunkZ), data);
+	public synchronized void putTag(int tagY, int chunkX, int chunkZ, byte[] data) {
+		put(new CubePos(chunkX, tagY, chunkZ), data);
 	}
 
 	@Override

@@ -16,8 +16,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Moves every section of a chunk column into the {@code .dcr} store, leaving {@code .mca} with the
- * column's metadata; a world whose sections only exist in {@code .mca} converts on its next save.
+ * Writes every section of a chunk column to the {@code .dcr} store and strips it from the stored
+ * chunk tag, so the metadata payload carries no blocks.
  * shortcut: sections are encoded on the save thread, so a column with many sections lengthens that tick.
  */
 @Mixin(SerializableChunkData.class)

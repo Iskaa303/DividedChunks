@@ -38,6 +38,9 @@ public final class NeoforgeGameTests {
 		event.registerTest(
 				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "save_stores_whole_column"),
 				new InlineGameTest(data, GameTests::saveStoresWholeColumn));
+		event.registerTest(
+				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "save_stores_entities_and_poi"),
+				new InlineGameTest(data, GameTests::saveStoresEntitiesAndPoi));
 	}
 }
 //?}

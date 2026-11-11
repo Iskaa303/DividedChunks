@@ -21,5 +21,10 @@ public class FabricGameTests {
 	public void saveStoresWholeColumn(GameTestHelper helper) {
 		GameTests.saveStoresWholeColumn(helper);
 	}
+
+	@GameTest(structure = "minecraft:empty", maxTicks = 20)
+	public void saveStoresEntitiesAndPoi(GameTestHelper helper) {
+		GameTests.saveStoresEntitiesAndPoi(helper);
+	}
 }
 *///?}

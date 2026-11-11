@@ -11,9 +11,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
- * Drops the sections the occlusion Octree offers outside the vertical view distance, so what is drawn
- * is a cube around the player. The Octree's own box is a cube the size of the render distance in
- * sections, which is taller than the view distance for every radius that is not a power of two.
+ * Drops the sections the occlusion Octree offers outside the vertical view distance: its box is a
+ * power-of-two cube, taller than the view distance for radii that are not powers of two.
  */
 @MixinIgnore
 @Mixin(targets = "net.minecraft.client.renderer.SectionOcclusionGraph")

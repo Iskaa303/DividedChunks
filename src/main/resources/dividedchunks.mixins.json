@@ -9,7 +9,6 @@
   "mixins": [
     "ChunkAccessMixin",
     "ChunkHolderMixin",
-    "ChunkMapAccess",
     "FriendlyByteBufMixin",
     "LevelChunkMixin",
     "LevelMixin",

@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/** Reads and writes a whole chunk column through the {@code .dcr} store; {@code .mca} keeps the metadata. */
+/** Reads and writes a whole chunk column through the {@code .dcr} store. */
 public final class ColumnPersistence {
 
 	private ColumnPersistence() {
