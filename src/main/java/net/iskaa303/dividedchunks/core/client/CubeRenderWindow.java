@@ -1,15 +1,15 @@
 package net.iskaa303.dividedchunks.core.client;
 
-import net.iskaa303.dividedchunks.DividedChunks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.SectionPos;
+import net.minecraft.util.Mth;
 
 /**
- * The client's render-section band: a fixed-height window that follows the player vertically, so
- * sections outside the vanilla band can be rendered. The window is tall enough to always cover the
- * vanilla band while the player is inside or near it.
+ * The client's render box: a cube of the vanilla render distance around the player. The window is
+ * taller than the cube so it survives vertical movement without a rebuild; the occlusion graph's own
+ * cull keeps what is drawn a cube.
  */
 public final class CubeRenderWindow {
 
@@ -19,14 +19,25 @@ public final class CubeRenderWindow {
 	private CubeRenderWindow() {
 	}
 
-	private static int radius() {
-		return Math.max(0, DividedChunks.config().verticalViewDistanceCubes);
+	/** Radius of the cube in sections. */
+	public static int radius() {
+		return Math.max(1, Minecraft.getInstance().options.getEffectiveRenderDistance());
 	}
 
 	/** Height of the window in sections, or 0 without a client level. */
 	public static int height() {
+		if (Minecraft.getInstance().level == null) {
+			return 0;
+		}
+		int cube = 2 * radius() + 1;
+		// The occlusion Octree is a cube of this size; a taller window would be partly unvisited.
+		return Math.min(Mth.smallestEncompassingPowerOfTwo(cube), 2 * cube);
+	}
+
+	/** Section Y of the player, or the middle of the level's band without a player. */
+	public static int cameraSectionY() {
 		ClientLevel level = Minecraft.getInstance().level;
-		return level == null ? 0 : level.getMaxSectionY() - level.getMinSectionY() + 1 + 2 * radius();
+		return center(level);
 	}
 
 	/** Lower bound of the window, recording it; {@code Integer.MIN_VALUE} without a client level. */
@@ -60,10 +71,21 @@ public final class CubeRenderWindow {
 		return min == Integer.MIN_VALUE ? vanilla : lastMaxSectionY;
 	}
 
+	/** Lower block bound for the window, or {@code vanilla} without a client level. */
+	public static int minBlockY(int vanilla) {
+		int min = min();
+		return min == Integer.MIN_VALUE ? vanilla : min * 16;
+	}
+
+	/** Upper block bound for the window, or {@code vanilla} without a client level. */
+	public static int maxBlockY(int vanilla) {
+		int min = min();
+		return min == Integer.MIN_VALUE ? vanilla : lastMaxSectionY * 16 + 15;
+	}
+
 	/**
-	 * Lower block bound for the occlusion Octree, which starts its vertical box at the world's
-	 * bottom unless the box already spans every section. Anchoring it to the window instead keeps
-	 * the camera inside the box once the window has left the vanilla band.
+	 * Lower block bound for the occlusion Octree, which starts its vertical box at the world's bottom
+	 * unless the box already spans every section; anchoring it to the window keeps the camera inside.
 	 */
 	public static int octreeMinBlockY(int vanilla) {
 		if (lastMinSectionY == Integer.MIN_VALUE) {
@@ -73,15 +95,15 @@ public final class CubeRenderWindow {
 		return (int) Math.clamp((long) lastMinSectionY * 16, Integer.MIN_VALUE + 1024L, Integer.MAX_VALUE - 1024L);
 	}
 
-	/** True once the player has left the middle half of the current window. */
+	/** True once the player is close enough to a window edge that the cube would be cut off. */
 	public static boolean needsRebuild() {
 		ClientLevel level = Minecraft.getInstance().level;
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (level == null || player == null || lastMinSectionY == Integer.MIN_VALUE) {
 			return false;
 		}
-		int margin = (lastMaxSectionY - lastMinSectionY) / 4;
+		int radius = radius();
 		int sectionY = SectionPos.blockToSectionCoord(player.blockPosition().getY());
-		return sectionY < lastMinSectionY + margin || sectionY > lastMaxSectionY - margin;
+		return sectionY - lastMinSectionY < radius || lastMaxSectionY - sectionY < radius;
 	}
 }

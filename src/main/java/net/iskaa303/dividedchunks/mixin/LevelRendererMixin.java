@@ -9,12 +9,32 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Builds the render band as a window that follows the player, and rebuilds it on vertical drift. */
+/** Builds the render band from the cube window instead of the vanilla band. */
 @MixinIgnore
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
 
 	//? if >=26.2 {
+	@ModifyArg(
+			method = "invalidateCompiledGeometry",
+			at = @At(
+					value = "INVOKE",
+					target = "Lnet/minecraft/client/renderer/ViewArea;<init>(Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher;IIIIILnet/minecraft/client/renderer/SectionOcclusionGraph;)V"),
+			index = 1)
+	private int dividedchunks$windowMinBlockY(int minBlockY) {
+		return CubeRenderWindow.minBlockY(minBlockY);
+	}
+
+	@ModifyArg(
+			method = "invalidateCompiledGeometry",
+			at = @At(
+					value = "INVOKE",
+					target = "Lnet/minecraft/client/renderer/ViewArea;<init>(Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher;IIIIILnet/minecraft/client/renderer/SectionOcclusionGraph;)V"),
+			index = 2)
+	private int dividedchunks$windowMaxBlockY(int maxBlockY) {
+		return CubeRenderWindow.maxBlockY(maxBlockY);
+	}
+
 	@ModifyArg(
 			method = "invalidateCompiledGeometry",
 			at = @At(

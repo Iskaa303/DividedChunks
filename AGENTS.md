@@ -66,6 +66,31 @@ Run every Gradle command from the repository root. `devenv` evaluates `devenv.ni
 (≈20 s), and `LD_LIBRARY_PATH`/`XDG_DATA_DIRS` are only wired up inside that shell — a build outside
 it will still work, a *client run* outside it may crash on GL/Vulkan/OpenAL.
 
+## Testing the client headlessly
+
+The dev shell ships `Xvfb` (virtual display) and `scrot` (screenshot), so the real client can be run
+and photographed from a terminal — no window manager, GPU or input injection needed:
+
+```bash
+devenv shell -- Xvfb :99 -screen 0 1280x720x24     # keep it in its own shell/session
+devenv shell -- ./gradlew :26.3-neoforge:runServer # dedicated server, dev world
+DISPLAY=:99 devenv shell -- ./gradlew :26.3-neoforge:runClient
+DISPLAY=:99 scrot -o /tmp/shot.png               # inside the dev shell
+```
+
+* The world is driven from the **server console** (`/tp`, `/fill`, `/setblock`, `/time set noon`);
+  nothing can click or type into the client — this machine has no `xdotool`/`wtype`/`ydotool`.
+* Joining needs quick-play: add `programArgument("--quickPlayMultiplayer")` and
+  `programArgument("localhost")` to the client run in `build.neoforge.gradle.kts` (one argument per
+  call, never `--args`), and revert them afterwards.
+* Software rendering (llvmpipe) is slow: a few hundred frames take minutes, so poll the log or take
+  screenshots instead of waiting for a fixed time.
+* Fog ends at about the render distance, so a screenshot cannot tell "culled" from "fogged" at the
+  far edge of the view distance — check boundaries with a temporary log line, not with pixels.
+* A stale client or server process makes the next `runServer` die with
+  `DirectoryLock$LockException: ... world/session.lock: already locked`; kill the leftovers
+  (`ps aux | grep -e clientRunVmArgs -e serverRunVmArgs`) first.
+
 ## Project layout
 
 ```

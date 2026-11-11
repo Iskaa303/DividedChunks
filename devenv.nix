@@ -50,6 +50,9 @@ in
     alsa-lib
     libpulseaudio
     pipewire
+    # headless client testing: virtual display plus a framebuffer grabber (see AGENTS.md)
+    xvfb
+    scrot
   ];
 
   env.GRADLE_USER_HOME = "${config.devenv.root}/.gradle-home";

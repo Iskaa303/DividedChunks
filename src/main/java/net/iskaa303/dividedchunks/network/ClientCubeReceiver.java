@@ -25,5 +25,7 @@ public final class ClientCubeReceiver {
 			access.dividedchunks$putSection(payload.sectionY(),
 					SectionCodec.decode(payload.data(), level.palettedContainerFactory()));
 		}
+		// A section that arrives after its render section was compiled has to be re-meshed.
+		level.setSectionDirtyWithNeighbors(payload.chunkX(), payload.sectionY(), payload.chunkZ());
 	}
 }
