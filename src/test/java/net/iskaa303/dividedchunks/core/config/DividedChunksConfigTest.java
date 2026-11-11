@@ -22,7 +22,7 @@ class DividedChunksConfigTest {
 		String text = Files.readString(file, StandardCharsets.UTF_8);
 		assertTrue(text.contains("DividedChunks configuration"), "file should have a header comment");
 		assertTrue(text.contains("#"), "file should contain comments");
-		assertTrue(text.contains("minY = -2147483648"), "default minY should be written: \n" + text);
+		assertTrue(text.contains("minY = -8388608"), "default minY should be written: \n" + text);
 		assertTrue(text.contains("skyConeAngleDegrees = 45"), "default sky reach should be written");
 
 		assertEquals(DividedChunksConfig.DEFAULT_MIN_Y, config.defaults.minY);
@@ -54,6 +54,21 @@ class DividedChunksConfigTest {
 		DividedChunksConfig config = new DividedChunksConfig();
 		config.defaults.minY = Integer.MIN_VALUE;
 		config.defaults.maxY = Integer.MAX_VALUE;
+		config.sanitize();
+
+		assertEquals(DividedChunksConfig.MIN_ALLOWED_Y, config.defaults.minY);
+		assertEquals(DividedChunksConfig.MAX_ALLOWED_Y, config.defaults.maxY);
+	}
+
+	/** Section Y is packed into 20 bits, so the accepted range stops at +-8,388,608 blocks. */
+	@Test
+	void acceptedRangeFitsTheSectionYField() {
+		assertEquals(-8388608, DividedChunksConfig.MIN_ALLOWED_Y);
+		assertEquals(8388607, DividedChunksConfig.MAX_ALLOWED_Y);
+
+		DividedChunksConfig config = new DividedChunksConfig();
+		config.defaults.minY = -9000000;
+		config.defaults.maxY = 9000000;
 		config.sanitize();
 
 		assertEquals(DividedChunksConfig.MIN_ALLOWED_Y, config.defaults.minY);

@@ -92,7 +92,7 @@ public final class GameTests {
 			assertSkyLight(helper, "inside a sealed box", level, boxX, y + 2, boxZ, 0);
 
 			config.skyConeAngleDegrees = 0;
-			((ColumnSectionAccess) level.getChunk(910, 910)).dividedchunks$invalidateSkyAround();
+			((ColumnSectionAccess) level.getChunk(910, 910)).dividedchunks$invalidateSkyAround(9999);
 			assertSkyLight(helper, "under the roof with a vanilla reach", level, roofX, 9999, roofZ, 0);
 		} finally {
 			config.skyConeAngleDegrees = savedCone;
@@ -110,6 +110,58 @@ public final class GameTests {
 			}
 		}
 		return section;
+	}
+
+	/**
+	 * Light has to fall: a room whose only opening is above an inner wall still lights up, because the
+	 * light that got over the wall drops into the far half instead of stopping at that one height.
+	 */
+	public static void skyLightFallsUnderCover(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		DividedChunksConfig.DimensionConfig config = DividedChunks.config()
+				.forDimension(level.dimension().identifier().toString());
+		int savedCone = config.skyConeAngleDegrees;
+		int chunkX = 950;
+		int chunkZ = 950;
+		int baseY = 9008;
+		try {
+			config.skyConeAngleDegrees = 45;
+			LevelChunkSection section = new LevelChunkSection(level.palettedContainerFactory());
+			for (int localX = 0; localX < 16; localX++) {
+				for (int localZ = 0; localZ < 16; localZ++) {
+					boolean edge = localX == 0 || localX == 15 || localZ == 0 || localZ == 15;
+					for (int localY = 0; localY <= 10; localY++) {
+						boolean solid = localY == 0 || localY == 10 || (edge && localY < 10)
+								|| (localX == 8 && localY <= 8);
+						if (solid) {
+							section.setBlockState(localX, localY, localZ, Blocks.STONE.defaultBlockState());
+						}
+					}
+				}
+			}
+			// The one opening: a hole in the ceiling of the near room.
+			section.setBlockState(3, 10, 3, Blocks.AIR.defaultBlockState());
+			LevelChunk chunk = level.getChunk(chunkX, chunkZ);
+			((ColumnSectionAccess) chunk).dividedchunks$putSection(baseY >> 4, section);
+
+			int minX = chunkX * 16;
+			int minZ = chunkZ * 16;
+			int near = level.getBrightness(LightLayer.SKY, new BlockPos(minX + 3, baseY + 1, minZ + 3));
+			if (near < 8) {
+				throw helper.assertionException("sky light under the shaft is %s, expected a lit value".formatted(near));
+			}
+			int far = level.getBrightness(LightLayer.SKY, new BlockPos(minX + 14, baseY + 2, minZ + 14));
+			if (far <= 0) {
+				throw helper.assertionException(
+						"sky light past the inner wall is 0, expected light to fall over the wall");
+			}
+			if (far >= 15) {
+				throw helper.assertionException("sky light past the inner wall is %s, expected a dim value".formatted(far));
+			}
+		} finally {
+			config.skyConeAngleDegrees = savedCone;
+		}
+		helper.succeed();
 	}
 
 	private static void assertSkyLight(GameTestHelper helper, String what, ServerLevel level, int x, int y, int z,

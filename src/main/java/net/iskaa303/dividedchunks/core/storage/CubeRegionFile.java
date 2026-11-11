@@ -210,7 +210,9 @@ final class CubeRegionFile implements AutoCloseable {
 
 	private void maybeCompact() throws IOException {
 		long dead = this.file.length() - FILE_HEADER_SIZE - this.liveBytes;
-		if (dead > 0 && dead >= this.compactionThreshold) {
+		// Overwrites leave dead records behind, so a played-in file needs rewriting once they outnumber
+		// the live ones; that bounds it at twice the live size.
+		if (dead >= this.compactionThreshold || dead >= this.liveBytes) {
 			compact();
 		}
 	}

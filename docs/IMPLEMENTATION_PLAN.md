@@ -59,22 +59,27 @@ classes, like vanilla's `LevelHeightAccessor`.
 - Per column, a 16×16 array of sky-source Y values computed over the whole column, not just
   loaded sections.
 - Unloaded columns keep a persisted per-column shadow height, so distant terrain still occludes.
-- Sky light is an **air-path distance**: for a block, the shortest path through air at its own
-  height to a column that is open to the sky. Light therefore travels around cover instead of
-  stopping at the column above it: a lone or distant obstruction dims by distance only, a wide
-  roof leaves a gradient, and a sealed volume stays dark because no air path reaches it.
+- Sky light is an **air-path distance**: for a block, the shortest path through air to a column that
+  is open to the sky, following light sideways and downwards. Light therefore travels around cover
+  instead of stopping at the column above it: a lone or distant obstruction dims by distance only, a
+  wide roof leaves a gradient, and a sealed volume stays dark because no air path reaches it. Light
+  falls without losing a level, so a wall that does not reach the ceiling still lets the far side
+  light up, and a cell under a cover is lit from the lit cell above it rather than staying black.
 - `skyConeAngleDegrees` sets the reach: one block of travel per light level per 15 degrees, so 0
   is vanilla's 15-block shadow and the default 45 reaches 60 blocks (level = 15 − distance / 4).
-- Vertical light (a shaft through a roof) works only as far as the shaft's own column is open, so
-  a block below an overhang is lit through its neighbours, not through light falling from above.
+- The light of a section is computed from the section above it, so a column is lit top-down: each
+  cached section asks for the bottom row of the one above (up to 24 sections, or until the column
+  has no more stored sections). An absent section is air, which the open-column rule already covers.
 
 ### 3.4 Lighting
 
 - Block light: flood fill inside loaded cubes. Not implemented: emissive blocks outside the band
   still light nothing.
 - Sky light: computed per out-of-band section from the column tops and block opacity, then cached
-  per section and dropped whenever a section or block near it changes. Light data is section-keyed
-  and sparse like blocks.
+  per section. Light only travels downwards, so a change at one Y invalidates the cached sections at
+  and below it in the edited column and in the columns the reach can touch; the occluder tops of
+  those columns are dropped only when the edit is at or above the lowest one. Light data is
+  section-keyed and sparse like blocks.
 
 ### 3.5 Storage format (custom region files)
 
@@ -176,9 +181,10 @@ terrain.
   out-of-band roof unless `Level.setBlock` kicked the engine, so the sky layer is answered by
   `LightEngineMixin` from per-section light arrays.
   - F4a Sky light. *(done)* Each out-of-band section gets a light array of air-path distances to
-    the nearest column open at that height, cached on the column. Shadows are soft by distance and
-    only an enclosed volume is dark, so a lone block or a floating island never blackens what is
-    below it.
+    the nearest column open to the sky, following light sideways and down, cached on the column and
+    seeded from the section above so light falls past a wall that does not reach the ceiling. Shadows
+    are soft by distance and only an enclosed volume is dark, so a lone block or a floating island
+    never blackens what is below it.
   - F4b Block light. Emissive blocks outside the band light nothing (`getBrightness(BLOCK, …)` is 0),
     so this needs a propagation pass of its own.
 - **F5 — Loading/tickets.** 3D view distance, vertical loading, unload GC.
@@ -197,7 +203,13 @@ terrain.
   accessor seam.
 - **Light engine rewrite** is the largest single risk.
 - **Section position ceiling.** `SectionPos` packs Y into 20 bits, so section Y wraps beyond ±524288
-  (±8.4M blocks) even though block positions carry the full int range.
+  (±8.4M blocks). The configured vertical range is clamped to that on load, so no block Y outside it
+  can be stored or addressed; widening it would mean replacing `SectionPos` itself.
+- **Stale entity payloads.** A column saved before a mob wanders off keeps that mob in its entity
+  payload, so loading it next to the mob's real column adds one UUID twice. Vanilla drops the second
+  copy and logs `UUID of added entity already exists`, so nothing is duplicated, but the surviving
+  copy can be the stale one and snap the mob back to where it used to be. Vanilla's `.mca` entity
+  files have the same hole; closing it needs an entity-to-column index (F7).
 - **Render section allocation.** Centring the render window on the player adds
   `2 * verticalViewDistanceCubes` section Y levels to the vanilla band, about 67% more render
   sections at the default radius of 8.

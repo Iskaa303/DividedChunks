@@ -25,11 +25,11 @@ public interface ColumnSectionAccess {
 	 */
 	byte[] dividedchunks$skyLight(int sectionY);
 
-	/** Drops the cached sky occluder heights and light of this column. */
-	void dividedchunks$invalidateSky();
+	/** Drops the cached sky occluder heights of this column and the light of every section at or below {@code blockY}. */
+	void dividedchunks$invalidateSkyFrom(int blockY);
 
-	/** Drops the cached sky data of this column and of every column the light reach can touch. */
-	void dividedchunks$invalidateSkyAround();
+	/** Drops what {@link #dividedchunks$invalidateSkyFrom(int)} does, in this column and every column the reach can touch. */
+	void dividedchunks$invalidateSkyAround(int blockY);
 
 	/** Visits every stored section, lowest Y first. */
 	void dividedchunks$forEachSection(BiConsumer<Integer, LevelChunkSection> consumer);

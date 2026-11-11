@@ -177,4 +177,27 @@ class CubeRegionFileTest {
 			assertArrayEquals(bytes(19, 19, 19, 19), region.get(new CubePos(1, 1, 1)).orElseThrow());
 		}
 	}
+
+	/** The default threshold is unreachable in a test, so the file has to stay near its live size instead. */
+	@Test
+	void compactsWhenDeadRecordsOutnumberLiveOnes() throws IOException {
+		Path file = this.file();
+		byte[] payload = new byte[4096];
+		try (CubeRegionFile region = new CubeRegionFile(file, 0, 0)) {
+			CubePos pos = new CubePos(1, 1, 1);
+			region.put(pos, payload);
+			long oneRecord = Files.size(file);
+			for (int i = 0; i < 8; i++) {
+				region.put(pos, payload);
+			}
+			// Dead records are rewritten away, so the file stays close to one live record.
+			assertTrue(Files.size(file) < oneRecord * 3,
+					"file grew to " + Files.size(file) + " with one live record of " + oneRecord);
+			assertArrayEquals(payload, region.get(pos).orElseThrow());
+		}
+		try (CubeRegionFile region = new CubeRegionFile(file, 0, 0)) {
+			assertArrayEquals(payload, region.get(new CubePos(1, 1, 1)).orElseThrow());
+			assertEquals(1, region.count());
+		}
+	}
 }

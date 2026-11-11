@@ -49,6 +49,10 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	@Unique
 	private int[] dividedchunks$skyTops;
 
+	/** How far above a section its light is followed; deeper columns fall back to the open-column rule. */
+	@Unique
+	private static final int MAX_SKY_CARRY_SECTIONS = 24;
+
 	/** Section Y to its sky light; a concurrent map because the client renderer queries it too. */
 	@Unique
 	private final Map<Integer, byte[]> dividedchunks$skyLight = new ConcurrentHashMap<>();
@@ -83,7 +87,7 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	public LevelChunkSection dividedchunks$putSection(int sectionY, LevelChunkSection section) {
 		LevelChunkSection previous = this.dividedchunks$sections.put(sectionY, section);
 		this.dividedchunks$sectionView = null;
-		this.dividedchunks$invalidateSkyAround();
+		this.dividedchunks$invalidateSkyAround(sectionY << 4 | 15);
 		this.dividedchunks$syncDense(sectionY, section);
 		return previous;
 	}
@@ -92,7 +96,7 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	public LevelChunkSection dividedchunks$removeSection(int sectionY) {
 		LevelChunkSection previous = this.dividedchunks$sections.remove(sectionY);
 		this.dividedchunks$sectionView = null;
-		this.dividedchunks$invalidateSkyAround();
+		this.dividedchunks$invalidateSkyAround(sectionY << 4 | 15);
 		this.dividedchunks$syncDense(sectionY, null);
 		return previous;
 	}
@@ -121,14 +125,25 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	}
 
 	@Override
-	public void dividedchunks$invalidateSky() {
-		this.dividedchunks$skyTops = null;
-		this.dividedchunks$skyLight.clear();
+	public void dividedchunks$invalidateSkyFrom(int blockY) {
+		int[] tops = this.dividedchunks$skyTops;
+		if (tops != null) {
+			int lowest = Integer.MAX_VALUE;
+			for (int top : tops) {
+				lowest = Math.min(lowest, top);
+			}
+			if (blockY >= lowest) {
+				this.dividedchunks$skyTops = null;
+			}
+		}
+		// Light never travels upwards, so only sections at or below the edit can change.
+		int sectionY = SectionPos.blockToSectionCoord(blockY);
+		this.dividedchunks$skyLight.keySet().removeIf(cached -> cached <= sectionY);
 	}
 
 	@Override
-	public void dividedchunks$invalidateSkyAround() {
-		this.dividedchunks$invalidateSky();
+	public void dividedchunks$invalidateSkyAround(int blockY) {
+		this.dividedchunks$invalidateSkyFrom(blockY);
 		if (!((Object) this instanceof LevelChunk chunk)) {
 			return;
 		}
@@ -143,7 +158,7 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 				}
 				LevelChunk neighbour = level.getChunkSource().getChunkNow(pos.x() + dx, pos.z() + dz);
 				if (neighbour != null) {
-					((ColumnSectionAccess) neighbour).dividedchunks$invalidateSky();
+					((ColumnSectionAccess) neighbour).dividedchunks$invalidateSkyFrom(blockY);
 				}
 			}
 		}
@@ -151,6 +166,11 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 
 	@Override
 	public byte[] dividedchunks$skyLight(int sectionY) {
+		return this.dividedchunks$skyLight(sectionY, 0);
+	}
+
+	@Unique
+	private byte[] dividedchunks$skyLight(int sectionY, int depth) {
 		if (!((Object) this instanceof LevelChunk chunk)) {
 			return null;
 		}
@@ -164,9 +184,22 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 		light = SkyLight.compute(chunk.getPos().getMinBlockX(), chunk.getPos().getMinBlockZ(), sectionY << 4,
 				blocksPerLevel,
 				(worldX, worldZ) -> this.dividedchunks$skyOccluderTop(level, worldX, worldZ),
-				new ChunkBlocks(level));
+				new ChunkBlocks(level), this.dividedchunks$skyLightAbove(level, sectionY + 1, depth));
 		this.dividedchunks$skyLight.put(sectionY, light);
 		return light;
+	}
+
+	/**
+	 * Floor row of the section above, lit first, or {@code null} when nothing stored sits above this one:
+	 * an absent section is air, which the open-column rule already accounts for.
+	 */
+	@Unique
+	private byte[] dividedchunks$skyLightAbove(Level level, int sectionY, int depth) {
+		if (depth >= MAX_SKY_CARRY_SECTIONS || this.dividedchunks$sections.get(sectionY) == null) {
+			return null;
+		}
+		byte[] above = this.dividedchunks$skyLight(sectionY, depth + 1);
+		return above == null ? null : Arrays.copyOf(above, 256);
 	}
 
 	/** A column of an unloaded chunk stores no blocks, so it cannot occlude. */

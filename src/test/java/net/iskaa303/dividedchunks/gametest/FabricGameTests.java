@@ -18,6 +18,11 @@ public class FabricGameTests {
 	}
 
 	@GameTest(structure = "minecraft:empty", maxTicks = 20)
+	public void skyLightFallsUnderCover(GameTestHelper helper) {
+		GameTests.skyLightFallsUnderCover(helper);
+	}
+
+	@GameTest(structure = "minecraft:empty", maxTicks = 20)
 	public void saveStoresWholeColumn(GameTestHelper helper) {
 		GameTests.saveStoresWholeColumn(helper);
 	}

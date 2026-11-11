@@ -22,11 +22,15 @@ import java.util.Map;
  */
 public final class DividedChunksConfig {
 
+	/** Section Y is packed into 20 bits, which caps the addressable world at +-8,388,608 blocks. */
+	private static final int MIN_SECTION_Y = -(1 << 19);
+	private static final int MAX_SECTION_Y = (1 << 19) - 1;
+
 	/** Lowest block Y the mod accepts; lower values are clamped up to this. */
-	public static final int MIN_ALLOWED_Y = Integer.MIN_VALUE;
+	public static final int MIN_ALLOWED_Y = MIN_SECTION_Y * 16;
 	/** Highest block Y the mod accepts; higher values are clamped down to this. */
-	public static final int MAX_ALLOWED_Y = Integer.MAX_VALUE;
-	/** Defaults to the full accepted range, i.e. effectively unbounded (the whole 32-bit int range). */
+	public static final int MAX_ALLOWED_Y = MAX_SECTION_Y * 16 + 15;
+	/** Defaults to the full accepted range. */
 	public static final int DEFAULT_MIN_Y = MIN_ALLOWED_Y;
 	public static final int DEFAULT_MAX_Y = MAX_ALLOWED_Y;
 	public static final int MAX_SKY_CONE_ANGLE_DEGREES = 80;
@@ -46,10 +50,9 @@ public final class DividedChunksConfig {
 	private static final String COMMENT_VERTICAL_VIEW_DISTANCE =
 			"How many cubes above and below the player's cube stay loaded.";
 	private static final String COMMENT_MIN_Y =
-			"Lowest block Y that exists. The accepted range is the full signed 32-bit int range\n"
-					+ "(-2147483648 to 2147483647); values outside it are clamped to the closest accepted value, and\n"
-					+ "every value is snapped to a cube boundary. Defaults to the full range, i.e. effectively\n"
-					+ "unbounded.";
+			"Lowest block Y that exists. Sections are addressed with a 20-bit section Y, so the accepted\n"
+					+ "range is -8388608 to 8388607; values outside it are clamped to the closest accepted value, and\n"
+					+ "every value is snapped to a cube boundary. Defaults to the full range.";
 	private static final String COMMENT_MAX_Y =
 			"Highest block Y that exists. Same accepted range and clamping as minY (see above).";
 	private static final String COMMENT_SKY_CONE =

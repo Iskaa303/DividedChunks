@@ -27,12 +27,16 @@ public abstract class SectionOcclusionGraphMixin {
 			int closeDistance) {
 		int radius = CubeRenderWindow.radius();
 		int cameraSectionY = CubeRenderWindow.cameraSectionY();
+		int[] culled = new int[1];
 		tree.visitNodes((node, fullyVisible, depth, isClose) -> {
 			SectionRenderDispatcher.RenderSection section = node.getSection();
 			if (section != null
 					&& Math.abs(SectionPos.y(section.getSectionNode()) - cameraSectionY) <= radius) {
 				visitor.visit(node, fullyVisible, depth, isClose);
+			} else if (section != null) {
+				culled[0]++;
 			}
 		}, frustum, closeDistance);
+		CubeRenderWindow.countCulled(culled[0]);
 	}
 }

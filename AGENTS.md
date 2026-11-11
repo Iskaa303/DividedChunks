@@ -304,6 +304,18 @@ fastest way to read vanilla/loader behaviour. Prefer this over guessing API shap
   (`-Xdoclint:none -quiet`) and the Kotlin JVM target is pinned. Treat any new warning as a regression.
 * Report what you actually verified and what you did not.
 
+### Long runs: poll, never wait with a huge timeout
+
+Never give a shell command a multi-minute timeout. A long timeout hides a hung or looping task until
+it is too late (a runaway gametest server once wrote a 3.5 GB log in 30 minutes), and the whole call
+looks like "slow" instead of "stuck".
+
+* Start the long task in a `tui_run` session (or redirect to a file) and poll it with short commands
+  (`tail`, `grep`, `wc -l`) whose timeout is 60 s or less.
+* A single `./gradlew build runGameTests` normally finishes in well under a minute; if it has not
+  printed a result after a few minutes, stop it and investigate the log instead of waiting longer.
+* Bound log output: a run whose log grows without limit is a bug to report, not something to wait out.
+
 ## Known issues (already diagnosed — don't re-investigate from scratch)
 
 * **Vulkan on NeoForge 26.1.2/26.2 crashes** with

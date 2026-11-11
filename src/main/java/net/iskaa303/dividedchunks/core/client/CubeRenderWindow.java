@@ -13,10 +13,34 @@ import net.minecraft.util.Mth;
  */
 public final class CubeRenderWindow {
 
+	/** Diagnoses the cube boundary, which the fog hides: sections culled per second get logged. */
+	private static final boolean DEBUG_CULL = Boolean.getBoolean("dividedchunks.debugRender");
+
 	private static int lastMinSectionY = Integer.MIN_VALUE;
 	private static int lastMaxSectionY = Integer.MIN_VALUE;
+	private static long debugWindowStart;
+	private static int debugCulled;
 
 	private CubeRenderWindow() {
+	}
+
+	/** Records a frame's culled sections, logging once a second when the render debug flag is set. */
+	public static void countCulled(int culled) {
+		if (!DEBUG_CULL) {
+			return;
+		}
+		long now = System.nanoTime();
+		if (debugWindowStart == 0L) {
+			debugWindowStart = now;
+		}
+		debugCulled += culled;
+		if (now - debugWindowStart >= 1_000_000_000L) {
+			net.iskaa303.dividedchunks.DividedChunks.LOGGER.info(
+					"Cube cull: {} sections outside +-{} of section {} dropped this second", debugCulled, radius(),
+					cameraSectionY());
+			debugWindowStart = now;
+			debugCulled = 0;
+		}
 	}
 
 	/** Radius of the cube in sections. */
