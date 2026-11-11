@@ -73,13 +73,18 @@ classes, like vanilla's `LevelHeightAccessor`.
 
 ### 3.4 Lighting
 
-- Block light: flood fill inside loaded cubes. Not implemented: emissive blocks outside the band
-  still light nothing.
+- Block light: a flood from every emitter within 15 blocks of the section, inside a padded domain so
+  a lamp in a neighbouring cube or column lights across the seam. One level per block of air, one per
+  dampening, which is vanilla's rule; an enclosed room lit by a lamp lights up, stone swallows it, and
+  the vanilla band's own lamps count as sources. The band itself stays vanilla-lit, so an out-of-band
+  lamp does not light band cells.
 - Sky light: computed per out-of-band section from the column tops and block opacity, then cached
   per section. Light only travels downwards, so a change at one Y invalidates the cached sections at
   and below it in the edited column and in the columns the reach can touch; the occluder tops of
-  those columns are dropped only when the edit is at or above the lowest one. Light data is
-  section-keyed and sparse like blocks.
+  those columns are dropped only when the edit is at or above the lowest one. Block light reaches in
+  every direction, so a change drops it for the column and its 8 neighbours instead. Light data is
+  section-keyed and sparse like blocks, and an emitter-free section costs nothing (its cache entry
+  is an all-zero array).
 
 ### 3.5 Storage format (custom region files)
 
@@ -185,8 +190,11 @@ terrain.
     seeded from the section above so light falls past a wall that does not reach the ceiling. Shadows
     are soft by distance and only an enclosed volume is dark, so a lone block or a floating island
     never blackens what is below it.
-  - F4b Block light. Emissive blocks outside the band light nothing (`getBrightness(BLOCK, …)` is 0),
-    so this needs a propagation pass of its own.
+  - F4b Block light. *(done)* Every out-of-band section gets a light array flooded from the emitters
+    within one reach of it, which is enough to carry a lamp across a cube or chunk seam. A sealed
+    room lights up from its own lamp, stone swallows the light, and breaking the lamp darkens it
+    again; lamps inside the vanilla band count as sources, while band cells themselves stay
+    vanilla-lit.
 - **F5 — Loading/tickets.** 3D view distance, vertical loading, unload GC.
 - **F6 — World generation.** Vanilla-compat generator wrapped into a band; cubic terrain later.
 - **F7 — Entities/structures/biomes/spawn** at arbitrary Y.

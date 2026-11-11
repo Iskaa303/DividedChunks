@@ -56,7 +56,7 @@ public abstract class LevelChunkMixin {
 			at = @At("HEAD"), cancellable = true)
 	private void dividedchunks$setBlockState(BlockPos pos, BlockState state, int flags, CallbackInfoReturnable<BlockState> cir) {
 		LevelChunk self = (LevelChunk) (Object) this;
-		((ColumnSectionAccess) self).dividedchunks$invalidateSkyAround(pos.getY());
+		((ColumnSectionAccess) self).dividedchunks$invalidateLightAround(pos.getY());
 		if (this.dividedchunks$inBand(self, pos.getY())) {
 			return;
 		}

@@ -1,7 +1,10 @@
 package net.iskaa303.dividedchunks.mixin;
 
 import net.iskaa303.dividedchunks.DividedChunks;
+import net.iskaa303.dividedchunks.core.light.BlockLight;
 import net.iskaa303.dividedchunks.core.light.ChunkBlocks;
+import net.iskaa303.dividedchunks.core.light.Emitters;
+import net.iskaa303.dividedchunks.core.light.LightCache;
 import net.iskaa303.dividedchunks.core.light.SkyLight;
 import net.iskaa303.dividedchunks.core.world.ColumnSectionAccess;
 import net.iskaa303.dividedchunks.core.world.ColumnStorage;
@@ -23,9 +26,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Holds {@link ChunkAccess}'s sections in a sparse {@link ColumnStorage} keyed by section Y: the
@@ -35,6 +37,10 @@ import java.util.function.BiConsumer;
  */
 @Mixin(ChunkAccess.class)
 public abstract class ChunkAccessMixin implements ColumnSectionAccess {
+
+	/** How far above a section its light is followed; deeper columns fall back to the open-column rule. */
+	@Unique
+	private static final int MAX_SKY_CARRY_SECTIONS = 24;
 
 	@Shadow
 	@Final
@@ -49,13 +55,15 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	@Unique
 	private int[] dividedchunks$skyTops;
 
-	/** How far above a section its light is followed; deeper columns fall back to the open-column rule. */
 	@Unique
-	private static final int MAX_SKY_CARRY_SECTIONS = 24;
+	private final LightCache dividedchunks$skyLight = new LightCache();
 
-	/** Section Y to its sky light; a concurrent map because the client renderer queries it too. */
 	@Unique
-	private final Map<Integer, byte[]> dividedchunks$skyLight = new ConcurrentHashMap<>();
+	private final LightCache dividedchunks$blockLight = new LightCache();
+
+	/** Emitters of this column, or {@code null} until scanned. */
+	@Unique
+	private int[] dividedchunks$emitters;
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void dividedchunks$seedSections(CallbackInfo ci) {
@@ -87,7 +95,7 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	public LevelChunkSection dividedchunks$putSection(int sectionY, LevelChunkSection section) {
 		LevelChunkSection previous = this.dividedchunks$sections.put(sectionY, section);
 		this.dividedchunks$sectionView = null;
-		this.dividedchunks$invalidateSkyAround(sectionY << 4 | 15);
+		this.dividedchunks$invalidateLightAround(sectionY << 4 | 15);
 		this.dividedchunks$syncDense(sectionY, section);
 		return previous;
 	}
@@ -96,7 +104,7 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	public LevelChunkSection dividedchunks$removeSection(int sectionY) {
 		LevelChunkSection previous = this.dividedchunks$sections.remove(sectionY);
 		this.dividedchunks$sectionView = null;
-		this.dividedchunks$invalidateSkyAround(sectionY << 4 | 15);
+		this.dividedchunks$invalidateLightAround(sectionY << 4 | 15);
 		this.dividedchunks$syncDense(sectionY, null);
 		return previous;
 	}
@@ -125,6 +133,22 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	}
 
 	@Override
+	public void dividedchunks$invalidateLightAround(int blockY) {
+		this.dividedchunks$invalidateSkyFrom(blockY);
+		this.dividedchunks$emitters = null;
+		this.dividedchunks$blockLight.clear();
+		// Block light reaches at most 15 blocks, so its neighbours are the 8 around this column.
+		this.dividedchunks$forEachNeighbour(1, ColumnSectionAccess::dividedchunks$invalidateBlockLight);
+		if (!((Object) this instanceof LevelChunk chunk)) {
+			return;
+		}
+		int blocksPerLevel = SkyLight.blocksPerLevel(DividedChunks.config()
+				.forDimension(chunk.getLevel().dimension().identifier().toString()).skyConeAngleDegrees);
+		this.dividedchunks$forEachNeighbour(blocksPerLevel,
+				neighbour -> neighbour.dividedchunks$invalidateSkyFrom(blockY));
+	}
+
+	@Override
 	public void dividedchunks$invalidateSkyFrom(int blockY) {
 		int[] tops = this.dividedchunks$skyTops;
 		if (tops != null) {
@@ -137,31 +161,12 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 			}
 		}
 		// Light never travels upwards, so only sections at or below the edit can change.
-		int sectionY = SectionPos.blockToSectionCoord(blockY);
-		this.dividedchunks$skyLight.keySet().removeIf(cached -> cached <= sectionY);
+		this.dividedchunks$skyLight.clearFrom(SectionPos.blockToSectionCoord(blockY));
 	}
 
 	@Override
-	public void dividedchunks$invalidateSkyAround(int blockY) {
-		this.dividedchunks$invalidateSkyFrom(blockY);
-		if (!((Object) this instanceof LevelChunk chunk)) {
-			return;
-		}
-		Level level = chunk.getLevel();
-		ChunkPos pos = chunk.getPos();
-		int blocksPerLevel = SkyLight.blocksPerLevel(
-				DividedChunks.config().forDimension(level.dimension().identifier().toString()).skyConeAngleDegrees);
-		for (int dx = -blocksPerLevel; dx <= blocksPerLevel; dx++) {
-			for (int dz = -blocksPerLevel; dz <= blocksPerLevel; dz++) {
-				if (dx == 0 && dz == 0) {
-					continue;
-				}
-				LevelChunk neighbour = level.getChunkSource().getChunkNow(pos.x() + dx, pos.z() + dz);
-				if (neighbour != null) {
-					((ColumnSectionAccess) neighbour).dividedchunks$invalidateSkyFrom(blockY);
-				}
-			}
-		}
+	public void dividedchunks$invalidateBlockLight() {
+		this.dividedchunks$blockLight.clear();
 	}
 
 	@Override
@@ -174,19 +179,16 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 		if (!((Object) this instanceof LevelChunk chunk)) {
 			return null;
 		}
-		byte[] light = this.dividedchunks$skyLight.get(sectionY);
-		if (light != null) {
-			return light;
-		}
-		Level level = chunk.getLevel();
-		int blocksPerLevel = SkyLight.blocksPerLevel(
-				DividedChunks.config().forDimension(level.dimension().identifier().toString()).skyConeAngleDegrees);
-		light = SkyLight.compute(chunk.getPos().getMinBlockX(), chunk.getPos().getMinBlockZ(), sectionY << 4,
-				blocksPerLevel,
-				(worldX, worldZ) -> this.dividedchunks$skyOccluderTop(level, worldX, worldZ),
-				new ChunkBlocks(level), this.dividedchunks$skyLightAbove(level, sectionY + 1, depth));
-		this.dividedchunks$skyLight.put(sectionY, light);
-		return light;
+		return this.dividedchunks$skyLight.get(sectionY, requested -> {
+			Level level = chunk.getLevel();
+			byte[] above = this.dividedchunks$skyLightAbove(level, requested + 1, depth);
+			return SkyLight.compute(chunk.getPos().getMinBlockX(), chunk.getPos().getMinBlockZ(), requested << 4,
+					SkyLight.blocksPerLevel(
+							DividedChunks.config().forDimension(level.dimension().identifier().toString())
+									.skyConeAngleDegrees),
+					(worldX, worldZ) -> this.dividedchunks$skyOccluderTop(level, worldX, worldZ),
+					new ChunkBlocks(level), above);
+		});
 	}
 
 	/**
@@ -200,6 +202,52 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 		}
 		byte[] above = this.dividedchunks$skyLight(sectionY, depth + 1);
 		return above == null ? null : Arrays.copyOf(above, 256);
+	}
+
+	@Override
+	public byte[] dividedchunks$blockLight(int sectionY) {
+		if (!((Object) this instanceof LevelChunk chunk)) {
+			return null;
+		}
+		return this.dividedchunks$blockLight.get(sectionY, requested -> {
+			Level level = chunk.getLevel();
+			return BlockLight.compute(chunk.getPos().getMinBlockX(), requested << 4,
+					chunk.getPos().getMinBlockZ(), Emitters.near(level, (ChunkAccess) (Object) this, requested,
+							BlockLight.MAX),
+					new ChunkBlocks(level));
+		});
+	}
+
+	@Override
+	public int[] dividedchunks$emitters() {
+		int[] emitters = this.dividedchunks$emitters;
+		if (emitters == null) {
+			emitters = this.dividedchunks$emitters = (Object) this instanceof LevelChunk chunk
+					? Emitters.of(chunk.getLevel(), (ChunkAccess) (Object) this)
+					: new int[0];
+		}
+		return emitters;
+	}
+
+	/** Visits the loaded columns around this one out to {@code radius} chunks. */
+	@Unique
+	private void dividedchunks$forEachNeighbour(int radius, Consumer<ColumnSectionAccess> action) {
+		if (!((Object) this instanceof LevelChunk chunk)) {
+			return;
+		}
+		Level level = chunk.getLevel();
+		ChunkPos pos = chunk.getPos();
+		for (int dx = -radius; dx <= radius; dx++) {
+			for (int dz = -radius; dz <= radius; dz++) {
+				if (dx == 0 && dz == 0) {
+					continue;
+				}
+				LevelChunk neighbour = level.getChunkSource().getChunkNow(pos.x() + dx, pos.z() + dz);
+				if (neighbour != null) {
+					action.accept((ColumnSectionAccess) neighbour);
+				}
+			}
+		}
 	}
 
 	/** A column of an unloaded chunk stores no blocks, so it cannot occlude. */

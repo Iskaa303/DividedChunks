@@ -92,7 +92,7 @@ public final class GameTests {
 			assertSkyLight(helper, "inside a sealed box", level, boxX, y + 2, boxZ, 0);
 
 			config.skyConeAngleDegrees = 0;
-			((ColumnSectionAccess) level.getChunk(910, 910)).dividedchunks$invalidateSkyAround(9999);
+			((ColumnSectionAccess) level.getChunk(910, 910)).dividedchunks$invalidateLightAround(9999);
 			assertSkyLight(helper, "under the roof with a vanilla reach", level, roofX, 9999, roofZ, 0);
 		} finally {
 			config.skyConeAngleDegrees = savedCone;
@@ -162,6 +162,49 @@ public final class GameTests {
 			config.skyConeAngleDegrees = savedCone;
 		}
 		helper.succeed();
+	}
+
+	/**
+	 * A lamp in a sealed room outside the band lights the room with vanilla's falloff, lights nothing
+	 * through the walls, and goes dark again once it is removed.
+	 */
+	public static void blockLightUnderCover(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		int chunkX = 960;
+		int chunkZ = 960;
+		int baseY = 10000;
+		LevelChunk chunk = level.getChunk(chunkX, chunkZ);
+		int centreX = chunkX * 16 + 8;
+		int centreZ = chunkZ * 16 + 8;
+		for (int dx = -2; dx <= 2; dx++) {
+			for (int dy = 0; dy <= 4; dy++) {
+				for (int dz = -2; dz <= 2; dz++) {
+					boolean shell = Math.abs(dx) == 2 || Math.abs(dz) == 2 || dy == 0 || dy == 4;
+					chunk.setBlockState(new BlockPos(centreX + dx, baseY + dy, centreZ + dz),
+							(shell ? Blocks.STONE : Blocks.AIR).defaultBlockState(), 2);
+				}
+			}
+		}
+		chunk.setBlockState(new BlockPos(centreX, baseY + 2, centreZ), Blocks.GLOWSTONE.defaultBlockState(), 2);
+		((ColumnSectionAccess) chunk).dividedchunks$invalidateLightAround(baseY);
+
+		assertBlockLight(helper, "next to the lamp", level, centreX + 1, baseY + 2, centreZ, 14);
+		assertBlockLight(helper, "at the far corner of the room", level, centreX - 1, baseY + 2, centreZ - 1, 13);
+		assertBlockLight(helper, "inside the wall", level, centreX + 2, baseY + 2, centreZ, 0);
+		assertBlockLight(helper, "outside the sealed room", level, centreX + 4, baseY + 2, centreZ, 0);
+
+		chunk.setBlockState(new BlockPos(centreX, baseY + 2, centreZ), Blocks.AIR.defaultBlockState(), 2);
+		((ColumnSectionAccess) chunk).dividedchunks$invalidateLightAround(baseY + 2);
+		assertBlockLight(helper, "after breaking the lamp", level, centreX + 1, baseY + 2, centreZ, 0);
+		helper.succeed();
+	}
+
+	private static void assertBlockLight(GameTestHelper helper, String what, ServerLevel level, int x, int y, int z,
+			int expected) {
+		int light = level.getBrightness(LightLayer.BLOCK, new BlockPos(x, y, z));
+		if (light != expected) {
+			throw helper.assertionException("%s: block light is %s, expected %s".formatted(what, light, expected));
+		}
 	}
 
 	private static void assertSkyLight(GameTestHelper helper, String what, ServerLevel level, int x, int y, int z,
