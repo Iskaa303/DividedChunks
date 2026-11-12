@@ -110,10 +110,11 @@ classes, like vanilla's `LevelHeightAccessor`.
   the window; sections the player leaves are removed again, so a client only holds
   `verticalViewDistanceCubes` above and below itself. The window is recomputed when the player's
   section or chunk changes and otherwise once a second, which is also what drops the cubes of a
-  column that unloaded. Sections are read from the live column, so nothing waits on the store. An
-  edit outside a player's window is broadcast anyway, because the client's render window is taller
-  than the sent one; that section then stays on the client until its chunk unloads.
-  `-Ddividedchunks.debugCubes=true` logs each rescan's window.
+  column that unloaded. Sections are read from the live column, so nothing waits on the store. Band
+  sections are never sent as cubes: they arrive with the chunk packet, and a removal for one would
+  leave vanilla's band array without a section. An edit outside a player's window is broadcast
+  anyway, because the client's render window is taller than the sent one; that section then stays on
+  the client until its chunk unloads. `-Ddividedchunks.debugCubes=true` logs each rescan's window.
 - Vanilla packs a `BlockPos` on the wire into 12 bits of Y, so anything outside ±2048 wraps: a click
   on y=10089 reaches the server as y=1897 and is dropped as out of reach. We widen
   `FriendlyByteBuf.writeBlockPos`/`readBlockPos` (the one seam for every block position) to

@@ -98,16 +98,26 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 
 	@Override
 	public LevelChunkSection dividedchunks$removeSection(int sectionY) {
+		if (this.dividedchunks$isInBand(sectionY)) {
+			// Vanilla reads a band section without a null check, so the band always keeps its own.
+			return null;
+		}
 		LevelChunkSection previous = this.dividedchunks$sections.remove(sectionY);
 		this.dividedchunks$sectionView = null;
 		this.dividedchunks$invalidateLightAround(sectionY << 4 | 15);
-		this.dividedchunks$syncDense(sectionY, null);
 		return previous;
 	}
 
 	@Override
 	public void dividedchunks$forEachSection(BiConsumer<Integer, LevelChunkSection> consumer) {
 		this.dividedchunks$sections.forEach(consumer);
+	}
+
+	/** True for a section Y inside the vanilla band, which vanilla stores and syncs itself. */
+	@Unique
+	private boolean dividedchunks$isInBand(int sectionY) {
+		ChunkAccess self = (ChunkAccess) (Object) this;
+		return sectionY >= self.getMinSectionY() && sectionY <= self.getMaxSectionY();
 	}
 
 	/** Vanilla still reads the band array directly in places, so it has to match the sparse store. */

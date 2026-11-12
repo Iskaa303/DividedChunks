@@ -248,6 +248,26 @@ public final class GameTests {
 		helper.succeed();
 	}
 
+	/**
+	 * A cube removal must never take a band section away: vanilla's own {@code setBlockState} reads the
+	 * section without a null check, so losing one disconnects a client on its next block update.
+	 */
+	public static void bandSectionSurvivesCubeRemoval(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		LevelChunk chunk = level.getChunk(730, 730);
+		int bandSectionY = level.getMinSectionY() + 2;
+		ColumnSectionAccess access = (ColumnSectionAccess) chunk;
+		if (access.dividedchunks$removeSection(bandSectionY) != null) {
+			throw helper.assertionException("a cube removal took the band section at " + bandSectionY);
+		}
+		BlockPos pos = new BlockPos(730 * 16 + 3, (bandSectionY << 4) + 3, 730 * 16 + 3);
+		chunk.setBlockState(pos, Blocks.GOLD_BLOCK.defaultBlockState(), 2);
+		if (!level.getBlockState(pos).is(Blocks.GOLD_BLOCK)) {
+			throw helper.assertionException("a band block could not be set after the removal");
+		}
+		helper.succeed();
+	}
+
 	private static void assertBlockLight(GameTestHelper helper, String what, ServerLevel level, int x, int y, int z,
 			int expected) {
 		int light = level.getBrightness(LightLayer.BLOCK, new BlockPos(x, y, z));

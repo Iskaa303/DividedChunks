@@ -69,13 +69,18 @@ public final class CubeTracker {
 		int maxSectionY = windowMax(playerSectionY, half, storedMax);
 
 		LongSet wanted = new LongOpenHashSet();
+		int bandMin = level.getMinSectionY();
+		int bandMax = level.getMaxSectionY();
+		// Band sections arrive with the chunk packet; sending them as cubes duplicates them, and
+		// removing one later would leave vanilla's band array without a section at that index.
 		player.getChunkTrackingView().forEach(pos -> {
 			LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x(), pos.z());
 			if (chunk == null) {
 				return;
 			}
 			((ColumnSectionAccess) chunk).dividedchunks$forEachSection((sectionY, section) -> {
-				if (sectionY >= minSectionY && sectionY <= maxSectionY && !section.hasOnlyAir()) {
+				if (sectionY >= minSectionY && sectionY <= maxSectionY && !section.hasOnlyAir()
+						&& (sectionY < bandMin || sectionY > bandMax)) {
 					wanted.add(SectionPos.asLong(pos.x(), sectionY, pos.z()));
 				}
 			});
