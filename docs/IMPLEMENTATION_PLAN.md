@@ -148,7 +148,14 @@ classes, like vanilla's `LevelHeightAccessor`.
 - `LevelLightEngine` / `SkyLightEngine` / `SkyLightSectionStorage` — cubic light.
 - `ChunkMap` / `ServerChunkCache` / `ChunkHolder` — 3D tickets.
 - `ClientChunkCache` / chunk packets — client cube cache.
-- `ChunkBorderRenderer` — the cube lattice behind vanilla's F3+G chunk-border overlay.
+- `ChunkBorderRenderer` / `RenderTypes` / `RenderPipelines` — replaces vanilla's F3+G chunk-border
+  overlay with the same line set drawn over cubes instead of one chunk: vanilla's red 3x3 lattice,
+  its major-line blue on the camera chunk's corners, its cell teal on the cube boundaries, and its
+  yellow block grid (a line every two blocks) inside the camera chunk, plus a blue outline of the
+  cube the camera stands in, drawn over everything. Vanilla's own `emitGizmos` is cancelled because
+  its lines double up with ours. `RenderTypes.lines()` returns a line type built on a fog-free
+  fragment shader, so the overlay no longer fades into the fog colour at the far render distance;
+  before 26.3 that pipeline compiles on first use, in 26.3 it is added to the compiled set.
 - `SerializableChunkData` / `RegionFileStorage` — storage.
 - `ChunkGenerator` — worldgen.
 

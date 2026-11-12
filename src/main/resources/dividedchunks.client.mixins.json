@@ -13,6 +13,8 @@
     "GraphStorageMixin",
     "LevelExtractorMixin",
     "LevelRendererMixin",
+    "RenderPipelinesMixin",
+    "RenderTypesMixin",
     "SectionCopyMixin",
     "SectionOcclusionGraphMixin",
     "SectionUpdateTrackerMixin",
