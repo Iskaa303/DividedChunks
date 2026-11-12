@@ -188,10 +188,13 @@ terrain.
   - F3a Per-section `CubePayload` on both loaders, sent to a joining player and broadcast on every
     out-of-band edit; the client applies sections and removals to its sparse column. *(done)*
   - F3b Render out-of-band sections. The client renders over a fixed-height vertical window that
-    follows the player and is rebuilt once the player leaves its middle half; `SectionCopy` fills a
-    compiled section from the sparse column when its index is outside the vanilla band. The window is
-    taller than the cube so a vertical move does not rebuild it; what is inside it is decided by the
-    server's `verticalViewDistanceCubes` (F5). Out-of-band meshes were unlit until F4.
+    follows the player; `SectionCopy` fills a compiled section from the sparse column when its index
+    is outside the vanilla band. The window is a bucket of sections around the player plus one cube
+    of margin at each end, anchored to world Y, so the drawn cube always fits and the window only
+    moves when the player leaves a bucket (every 32 sections at the default render distance, instead
+    of every 9). Moving it releases every compiled section, so the bucket is as large as the render
+    grid allows. What is inside the window is decided by the server's `verticalViewDistanceCubes`
+    (F5). Out-of-band meshes were unlit until F4.
     *(done; 26.1.2 verified in game, 26.2/26.3 compile- and mixin-application-verified only)*
   - F3c Out-of-band interaction. `BlockPos` carries the full Y on the wire, and the build-limit gate
     on click/break uses the configured range instead of the vanilla band, so right-click placement,
@@ -240,10 +243,12 @@ terrain.
   copy can be the stale one and snap the mob back to where it used to be. Vanilla's `.mca` entity
   files have the same hole; closing it needs an entity-to-column index (F7).
 - **Render section allocation.** Centring the render window on the player adds a vertical window of
-  sections beside the vanilla band, about 67% more render sections at the default radius of 8. The
-  window the server fills is `verticalViewDistanceCubes` above and below the player, so a render
-  distance larger than that value draws fewer cubes than it has rows for; raise the config with the
-  render distance.
+  sections beside the vanilla band: 48 sections at radius 8, so three times the vanilla band's 24.
+  The dense grid costs height times `(2 * radius + 1)^2` render sections, which is why the bucket is
+  capped at 64 sections; past that the window moves more often instead of getting taller. The window
+  the server fills is `verticalViewDistanceCubes` above and below the player, so a render distance
+  larger than that value draws fewer cubes than it has rows for; raise the config with the render
+  distance.
 - **World format lock-in.** Version the region index and cube codec from day one.
 - **Performance.** Naive sparse maps can cost more than vanilla arrays; benchmark.
 

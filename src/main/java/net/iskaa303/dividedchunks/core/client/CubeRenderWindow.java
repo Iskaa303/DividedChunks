@@ -5,12 +5,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.SectionPos;
-import net.minecraft.util.Mth;
 
 /**
- * The client's render box: a cube of the vanilla render distance around the player. The window is
- * taller than the cube so it survives vertical movement without a rebuild; the occlusion graph's own
- * cull keeps what is drawn a cube.
+ * The client's render box: a cube of the vanilla render distance around the player, over a vertical
+ * window ({@link CubeWindow}) that only moves when the player leaves its bucket. The occlusion graph's
+ * own cull keeps what is drawn a cube.
  */
 public final class CubeRenderWindow {
 
@@ -19,6 +18,8 @@ public final class CubeRenderWindow {
 
 	private static int lastMinSectionY = Integer.MIN_VALUE;
 	private static int lastMaxSectionY = Integer.MIN_VALUE;
+	/** The band the render grid was built with, or {@code null} before the first build. */
+	private static CubeWindow current;
 	private static long debugWindowStart;
 	private static int debugCulled;
 
@@ -51,12 +52,7 @@ public final class CubeRenderWindow {
 
 	/** Height of the window in sections, or 0 without a client level. */
 	public static int height() {
-		if (Minecraft.getInstance().level == null) {
-			return 0;
-		}
-		int cube = 2 * radius() + 1;
-		// The occlusion Octree is a cube of this size; a taller window would be partly unvisited.
-		return Math.min(Mth.smallestEncompassingPowerOfTwo(cube), 2 * cube);
+		return Minecraft.getInstance().level == null ? 0 : CubeWindow.height(radius());
 	}
 
 	/** Section Y of the player, or the middle of the level's band without a player. */
@@ -65,16 +61,16 @@ public final class CubeRenderWindow {
 		return center(level);
 	}
 
-	/** Lower bound of the window, recording it; {@code Integer.MIN_VALUE} without a client level. */
+	/** Lower bound of the window for the player's bucket, recording it; {@code MIN_VALUE} without a level. */
 	public static int min() {
 		ClientLevel level = Minecraft.getInstance().level;
 		if (level == null) {
 			return Integer.MIN_VALUE;
 		}
-		int min = center(level) - height() / 2;
-		lastMinSectionY = min;
-		lastMaxSectionY = min + height() - 1;
-		return min;
+		current = CubeWindow.around(center(level), radius());
+		lastMinSectionY = current.min();
+		lastMaxSectionY = current.max();
+		return current.min();
 	}
 
 	private static int center(ClientLevel level) {
@@ -121,25 +117,23 @@ public final class CubeRenderWindow {
 	}
 
 	/**
-	 * Recomputes the window around the player before a rebuild, so the rebuilt window is already the
-	 * current one and the next frame does not ask for a second rebuild of the same band.
+	 * Recomputes the window for the player's current bucket before a rebuild, so the rebuilt window is
+	 * already the current one and the next frame does not ask for a second rebuild of the same band.
 	 */
 	public static void recentre() {
-		int min = min();
-		if (DEBUG_CULL) {
-			DividedChunks.LOGGER.info("Cube window rebuilt around section {}", lastMinSectionY + height() / 2);
+		min();
+		if (DEBUG_CULL && current != null) {
+			DividedChunks.LOGGER.info("Cube window rebuilt: sections {}..{}", current.min(), current.max());
 		}
 	}
 
-	/** True once the player is close enough to a window edge that the cube would be cut off. */
+	/** True once the player has left the bucket the window was built for. */
 	public static boolean needsRebuild() {
 		ClientLevel level = Minecraft.getInstance().level;
 		LocalPlayer player = Minecraft.getInstance().player;
-		if (level == null || player == null || lastMinSectionY == Integer.MIN_VALUE) {
+		if (level == null || player == null || current == null) {
 			return false;
 		}
-		int radius = radius();
-		int sectionY = SectionPos.blockToSectionCoord(player.blockPosition().getY());
-		return sectionY - lastMinSectionY < radius || lastMaxSectionY - sectionY < radius;
+		return !current.holds(SectionPos.blockToSectionCoord(player.blockPosition().getY()));
 	}
 }
