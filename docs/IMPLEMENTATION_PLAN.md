@@ -88,13 +88,18 @@ classes, like vanilla's `LevelHeightAccessor`.
 
 ### 3.5 Storage format (custom region files)
 
-- One `r.<rx>.<rz>.dcr` per 32×32 chunk columns per dimension, opened lazily with an LRU cap.
+- One `r.<rx>.<rz>.dcr` per 32×32 chunk columns per dimension, inside the dimension's own directory
+  (`<world>/dimensions/<namespace>/<path>/dividedchunks`), opened lazily with an LRU cap. The store
+  travels with the dimension it describes, so moving or deleting a dimension folder keeps it whole.
 - Header (`DCRF` magic + version), then append-only records, one per cube:
   `chunkX, sectionY, chunkZ, payload length, codec id, CRC32, payload`.
 - Payloads use **zlib** (`java.util.zip`): no extra dependency and no native library. The
   per-record codec id leaves room for LZ4 or zstd later.
 - The index is rebuilt on open by scanning record headers; an interrupted trailing write is
   dropped, and dead space past a threshold triggers compaction.
+- Writes of one column run in the order they were queued and a read of that column waits for them,
+  as vanilla's single-threaded IO worker did: without that, a column could be read while its own
+  payloads land, or two writes of the same record could land out of order.
 - Chunk data lives only in `.dcr` (F9): every section of the column, band included, plus the column
   payloads - chunk metadata, entities and points of interest - are records in the same store, told
   apart by a reserved section Y (`Integer.MIN_VALUE`, `+1`, `+2`). No `.mca` is read or written for
@@ -239,9 +244,9 @@ terrain.
   can be stored or addressed; widening it would mean replacing `SectionPos` itself.
 - **Stale entity payloads.** A column saved before a mob wanders off keeps that mob in its entity
   payload, so loading it next to the mob's real column adds one UUID twice. Vanilla drops the second
-  copy and logs `UUID of added entity already exists`, so nothing is duplicated, but the surviving
-  copy can be the stale one and snap the mob back to where it used to be. Vanilla's `.mca` entity
-  files have the same hole; closing it needs an entity-to-column index (F7).
+  copy and logs `UUID of added entity already exists`; the store drops the copy on read instead, when
+  the payload's `Pos` lies outside the column it was read from, so the stale copy can never take over
+  a live mob. Removing the copies from the files themselves needs an entity-to-column index (F7).
 - **Render section allocation.** Centring the render window on the player adds a vertical window of
   sections beside the vanilla band: 48 sections at radius 8, so three times the vanilla band's 24.
   The dense grid costs height times `(2 * radius + 1)^2` render sections, which is why the bucket is

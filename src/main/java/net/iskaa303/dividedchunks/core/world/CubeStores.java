@@ -10,10 +10,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * One {@link CubeRegionStorage} per dimension, under
- * {@code <world>/dividedchunks/<namespace>/<path>}; closed when the server stops.
+ * One {@link CubeRegionStorage} per dimension, inside the dimension's own directory
+ * ({@code <world>/dimensions/<namespace>/<path>/dividedchunks}); closed when the server stops.
  */
 public final class CubeStores {
+
+	/** Folder of the cube regions inside a dimension directory. */
+	private static final String STORE_FOLDER = "dividedchunks";
 
 	private static final Map<String, CubeRegionStorage> STORES = new ConcurrentHashMap<>();
 
@@ -22,18 +25,16 @@ public final class CubeStores {
 
 	public static CubeRegionStorage get(ServerLevel level) {
 		Identifier dimension = level.dimension().identifier();
-		return get(level.getServer().getWorldPath(LevelResource.ROOT), dimension.getNamespace(), dimension.getPath());
+		return get(level.getServer().getWorldPath(LevelResource.ROOT)
+				.resolve("dimensions").resolve(dimension.getNamespace()).resolve(dimension.getPath()));
 	}
 
-	/** The store of a dimension, given its directory {@code <world>/dimensions/<namespace>/<path>}. */
+	/** The store of the dimension whose directory this is. */
 	public static CubeRegionStorage get(Path dimensionDirectory) {
-		Path namespace = dimensionDirectory.getParent();
-		Path world = namespace == null ? null : namespace.getParent();
-		world = world == null ? null : world.getParent();
-		if (world == null) {
-			throw new IllegalArgumentException("Not a dimension directory: " + dimensionDirectory);
-		}
-		return get(world, namespace.getFileName().toString(), dimensionDirectory.getFileName().toString());
+		// One handle per file: the chunk store arrives from the server's world path, the entity and
+		// point-of-interest stores from their own folder, and interleaved appends corrupt the region.
+		Path directory = dimensionDirectory.resolve(STORE_FOLDER).toAbsolutePath().normalize();
+		return STORES.computeIfAbsent(directory.toString(), ignored -> new CubeRegionStorage(directory));
 	}
 
 	public static void closeAll() {
@@ -41,13 +42,5 @@ public final class CubeStores {
 			storage.close();
 		}
 		STORES.clear();
-	}
-
-	private static CubeRegionStorage get(Path world, String namespace, String path) {
-		// One handle per file: the chunk store arrives from the server's world path, the entity and
-		// point-of-interest stores from their own folder, and interleaved appends corrupt the region.
-		Path directory = world.resolve("dividedchunks").resolve(namespace).resolve(path)
-				.toAbsolutePath().normalize();
-		return STORES.computeIfAbsent(directory.toString(), ignored -> new CubeRegionStorage(directory));
 	}
 }
