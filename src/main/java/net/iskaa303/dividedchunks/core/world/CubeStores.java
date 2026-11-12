@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class CubeStores {
 
 	/** Folder of the cube regions inside a dimension directory. */
-	private static final String STORE_FOLDER = "dividedchunks";
+	public static final String STORE_FOLDER = "dividedchunks";
 
 	private static final Map<String, CubeRegionStorage> STORES = new ConcurrentHashMap<>();
 
