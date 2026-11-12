@@ -13,7 +13,6 @@
     "LevelChunkMixin",
     "LevelMixin",
     "MinecraftServerMixin",
-    "PlayerChunkSenderMixin",
     "ServerGamePacketListenerImplMixin",
     "SerializableChunkDataMixin",
     "SimpleRegionStorageMixin",

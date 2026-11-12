@@ -1,8 +1,6 @@
 package net.iskaa303.dividedchunks.mixin;
 
 import net.iskaa303.dividedchunks.core.world.ColumnSectionAccess;
-import net.iskaa303.dividedchunks.core.world.SectionCodec;
-import net.iskaa303.dividedchunks.network.CubePayload;
 import net.iskaa303.dividedchunks.network.CubeSync;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -88,12 +86,9 @@ public abstract class LevelChunkMixin {
 
 	@Unique
 	private void dividedchunks$broadcast(LevelChunk self, LevelChunkSection section, int sectionY) {
-		if (!(self.getLevel() instanceof ServerLevel serverLevel)) {
-			return;
+		if (self.getLevel() instanceof ServerLevel serverLevel) {
+			CubeSync.broadcast(serverLevel, self.getPos(), sectionY, section);
 		}
-		var chunkPos = self.getPos();
-		byte[] data = section.hasOnlyAir() ? new byte[0] : SectionCodec.encode(section, serverLevel.palettedContainerFactory());
-		CubeSync.broadcast(serverLevel, chunkPos, new CubePayload(chunkPos.x(), sectionY, chunkPos.z(), data));
 	}
 
 	private boolean dividedchunks$inBand(LevelChunk self, int blockY) {

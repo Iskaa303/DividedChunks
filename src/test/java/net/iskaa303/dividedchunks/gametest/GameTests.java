@@ -199,6 +199,55 @@ public final class GameTests {
 		helper.succeed();
 	}
 
+	/**
+	 * Light that enters a shaft from the side keeps falling down 29 stored sections, which a per-level
+	 * flood cannot do and a bounded carry would stop short of.
+	 */
+	public static void skyLightFallsDeep(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		int chunkX = 970;
+		int chunkZ = 970;
+		int bottomSectionY = 600;
+		int topSectionY = 629;
+		LevelChunk chunk = level.getChunk(chunkX, chunkZ);
+		ColumnSectionAccess access = (ColumnSectionAccess) chunk;
+		LevelChunkSection stone = new LevelChunkSection(level.palettedContainerFactory());
+		for (int localX = 0; localX < 16; localX++) {
+			for (int localZ = 0; localZ < 16; localZ++) {
+				for (int localY = 0; localY < 16; localY++) {
+					stone.setBlockState(localX, localY, localZ, Blocks.STONE.defaultBlockState());
+				}
+			}
+		}
+		for (int sectionY = bottomSectionY; sectionY <= topSectionY; sectionY++) {
+			LevelChunkSection section = stone.copy();
+			// Shaft at local (8, 8), plugged at its very top so its column counts as covered.
+			for (int localY = 0; localY < 16; localY++) {
+				section.setBlockState(8, localY, 8, Blocks.AIR.defaultBlockState());
+				section.setBlockState(12, localY, 8, Blocks.AIR.defaultBlockState());
+			}
+			if (sectionY == topSectionY) {
+				section.setBlockState(8, 15, 8, Blocks.STONE.defaultBlockState());
+			}
+			if (sectionY == topSectionY - 1) {
+				for (int localX = 9; localX <= 11; localX++) {
+					section.setBlockState(localX, 8, 8, Blocks.AIR.defaultBlockState());
+				}
+			}
+			access.dividedchunks$putSection(sectionY, section);
+		}
+
+		int minX = chunkX * 16;
+		int minZ = chunkZ * 16;
+		int deep = level.getBrightness(LightLayer.SKY, new BlockPos(minX + 8, (bottomSectionY << 4) + 8, minZ + 8));
+		if (deep <= 0) {
+			throw helper.assertionException("sky light %s sections below the side entrance is 0".formatted(
+					topSectionY - bottomSectionY));
+		}
+		assertSkyLight(helper, "inside the stone beside the shaft", level, minX + 9, (bottomSectionY << 4) + 8, minZ + 9, 0);
+		helper.succeed();
+	}
+
 	private static void assertBlockLight(GameTestHelper helper, String what, ServerLevel level, int x, int y, int z,
 			int expected) {
 		int light = level.getBrightness(LightLayer.BLOCK, new BlockPos(x, y, z));

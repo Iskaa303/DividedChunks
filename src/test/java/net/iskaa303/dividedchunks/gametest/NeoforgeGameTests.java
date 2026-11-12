@@ -42,6 +42,9 @@ public final class NeoforgeGameTests {
 				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "block_light_under_cover"),
 				new InlineGameTest(data, GameTests::blockLightUnderCover));
 		event.registerTest(
+				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "sky_light_falls_deep"),
+				new InlineGameTest(data, GameTests::skyLightFallsDeep));
+		event.registerTest(
 				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "save_stores_whole_column"),
 				new InlineGameTest(data, GameTests::saveStoresWholeColumn));
 		event.registerTest(

@@ -105,6 +105,15 @@ classes, like vanilla's `LevelHeightAccessor`.
 
 - Vanilla sends whole columns; we add cube packets (add/remove/update) plus a world-info handshake
   carrying the vertical range and shadow-map sizes.
+- Cubes are sent per player and kept to the box around them: on login, on a section the player enters,
+  and when a chunk is newly tracked a rescan sends the stored sections of that column that fall in
+  the window; sections the player leaves are removed again, so a client only holds
+  `verticalViewDistanceCubes` above and below itself. The window is recomputed when the player's
+  section or chunk changes and otherwise once a second, which is also what drops the cubes of a
+  column that unloaded. Sections are read from the live column, so nothing waits on the store. An
+  edit outside a player's window is broadcast anyway, because the client's render window is taller
+  than the sent one; that section then stays on the client until its chunk unloads.
+  `-Ddividedchunks.debugCubes=true` logs each rescan's window.
 - Vanilla packs a `BlockPos` on the wire into 12 bits of Y, so anything outside ±2048 wraps: a click
   on y=10089 reaches the server as y=1897 and is dropped as out of reach. We widen
   `FriendlyByteBuf.writeBlockPos`/`readBlockPos` (the one seam for every block position) to
@@ -171,13 +180,13 @@ terrain.
     server stops), wired into `LevelChunkMixin`: lazy load on first out-of-band access, write-back
     on change. *(done)*
 - **F3 — Network + client.**
-  - F3a Per-section `CubePayload` on both loaders, sent on (re)join from `PlayerChunkSender` and
-    broadcast on every out-of-band edit; the client applies sections and removals to its sparse
-    column. *(done)*
+  - F3a Per-section `CubePayload` on both loaders, sent to a joining player and broadcast on every
+    out-of-band edit; the client applies sections and removals to its sparse column. *(done)*
   - F3b Render out-of-band sections. The client renders over a fixed-height vertical window that
-    follows the player (`verticalViewDistanceCubes` above and below, plus the vanilla band) and is
-    rebuilt once the player leaves its middle half; `SectionCopy` fills a compiled section from the
-    sparse column when its index is outside the vanilla band. Out-of-band meshes are unlit until F4.
+    follows the player and is rebuilt once the player leaves its middle half; `SectionCopy` fills a
+    compiled section from the sparse column when its index is outside the vanilla band. The window is
+    taller than the cube so a vertical move does not rebuild it; what is inside it is decided by the
+    server's `verticalViewDistanceCubes` (F5). Out-of-band meshes were unlit until F4.
     *(done; 26.1.2 verified in game, 26.2/26.3 compile- and mixin-application-verified only)*
   - F3c Out-of-band interaction. `BlockPos` carries the full Y on the wire, and the build-limit gate
     on click/break uses the configured range instead of the vanilla band, so right-click placement,
@@ -195,7 +204,14 @@ terrain.
     room lights up from its own lamp, stone swallows the light, and breaking the lamp darkens it
     again; lamps inside the vanilla band count as sources, while band cells themselves stay
     vanilla-lit.
-- **F5 — Loading/tickets.** 3D view distance, vertical loading, unload GC.
+- **F5 — Loading/tickets.** *(done)* Chunks load as whole columns, so vanilla's per-column tickets
+  already cover the vertical axis for storage and entities. What had to be added is what the client
+  holds: every player gets the stored sections inside `verticalViewDistanceCubes` of their own
+  section, sent when they enter and removed when they leave, and a rescan once a second drops the
+  cubes of chunks that unloaded. Cubes come from the live column rather than the store, so a joining
+  player never waits on disk. The sky-light carry walks the stored run above a section instead of
+  recursing a bounded number of sections, so light that enters a shaft sideways keeps falling
+  through any number of stored sections.
 - **F6 — World generation.** Vanilla-compat generator wrapped into a band; cubic terrain later.
 - **F7 — Entities/structures/biomes/spawn** at arbitrary Y.
 - **F8 — Compatibility & API polish.** Events, optional-mod hooks, API docs.
@@ -218,9 +234,11 @@ terrain.
   copy and logs `UUID of added entity already exists`, so nothing is duplicated, but the surviving
   copy can be the stale one and snap the mob back to where it used to be. Vanilla's `.mca` entity
   files have the same hole; closing it needs an entity-to-column index (F7).
-- **Render section allocation.** Centring the render window on the player adds
-  `2 * verticalViewDistanceCubes` section Y levels to the vanilla band, about 67% more render
-  sections at the default radius of 8.
+- **Render section allocation.** Centring the render window on the player adds a vertical window of
+  sections beside the vanilla band, about 67% more render sections at the default radius of 8. The
+  window the server fills is `verticalViewDistanceCubes` above and below the player, so a render
+  distance larger than that value draws fewer cubes than it has rows for; raise the config with the
+  render distance.
 - **World format lock-in.** Version the region index and cube codec from day one.
 - **Performance.** Naive sparse maps can cost more than vanilla arrays; benchmark.
 

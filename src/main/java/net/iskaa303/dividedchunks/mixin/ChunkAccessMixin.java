@@ -38,10 +38,6 @@ import java.util.function.Consumer;
 @Mixin(ChunkAccess.class)
 public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 
-	/** How far above a section its light is followed; deeper columns fall back to the open-column rule. */
-	@Unique
-	private static final int MAX_SKY_CARRY_SECTIONS = 24;
-
 	@Shadow
 	@Final
 	protected LevelChunkSection[] sections;
@@ -171,37 +167,33 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 
 	@Override
 	public byte[] dividedchunks$skyLight(int sectionY) {
-		return this.dividedchunks$skyLight(sectionY, 0);
-	}
-
-	@Unique
-	private byte[] dividedchunks$skyLight(int sectionY, int depth) {
 		if (!((Object) this instanceof LevelChunk chunk)) {
 			return null;
 		}
-		return this.dividedchunks$skyLight.get(sectionY, requested -> {
-			Level level = chunk.getLevel();
-			byte[] above = this.dividedchunks$skyLightAbove(level, requested + 1, depth);
-			return SkyLight.compute(chunk.getPos().getMinBlockX(), chunk.getPos().getMinBlockZ(), requested << 4,
-					SkyLight.blocksPerLevel(
-							DividedChunks.config().forDimension(level.dimension().identifier().toString())
-									.skyConeAngleDegrees),
+		Level level = chunk.getLevel();
+		int reach = SkyLight.blocksPerLevel(
+				DividedChunks.config().forDimension(level.dimension().identifier().toString()).skyConeAngleDegrees);
+		// Light only flows down, so every stored section above has to be lit first: walking the run
+		// from its top does that in one pass, without recursion and without a depth limit.
+		byte[] above = null;
+		for (int y = this.dividedchunks$storedRunTop(sectionY); y >= sectionY; y--) {
+			byte[] previous = above;
+			above = this.dividedchunks$skyLight.get(y, requested -> SkyLight.compute(
+					chunk.getPos().getMinBlockX(), chunk.getPos().getMinBlockZ(), requested << 4, reach,
 					(worldX, worldZ) -> this.dividedchunks$skyOccluderTop(level, worldX, worldZ),
-					new ChunkBlocks(level), above);
-		});
+					new ChunkBlocks(level), previous));
+		}
+		return above;
 	}
 
-	/**
-	 * Floor row of the section above, lit first, or {@code null} when nothing stored sits above this one:
-	 * an absent section is air, which the open-column rule already accounts for.
-	 */
+	/** Highest section at or above {@code sectionY} with no unstored section between it and this one. */
 	@Unique
-	private byte[] dividedchunks$skyLightAbove(Level level, int sectionY, int depth) {
-		if (depth >= MAX_SKY_CARRY_SECTIONS || this.dividedchunks$sections.get(sectionY) == null) {
-			return null;
+	private int dividedchunks$storedRunTop(int sectionY) {
+		int top = sectionY;
+		while (this.dividedchunks$sections.get(top + 1) != null) {
+			top++;
 		}
-		byte[] above = this.dividedchunks$skyLight(sectionY, depth + 1);
-		return above == null ? null : Arrays.copyOf(above, 256);
+		return top;
 	}
 
 	@Override
