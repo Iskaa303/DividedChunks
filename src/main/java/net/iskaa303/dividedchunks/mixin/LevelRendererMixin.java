@@ -58,6 +58,7 @@ public abstract class LevelRendererMixin {
 	/*@Inject(method = "cullTerrain", at = @At("HEAD"))
 	private void dividedchunks$rebuildOnVerticalDrift(CallbackInfo ci) {
 		if (CubeRenderWindow.needsRebuild()) {
+			CubeRenderWindow.recentre();
 			((LevelRenderer) (Object) this).allChanged();
 		}
 	}

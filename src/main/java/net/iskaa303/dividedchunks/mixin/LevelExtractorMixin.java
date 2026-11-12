@@ -17,6 +17,7 @@ public abstract class LevelExtractorMixin {
 	@Inject(method = "extract", at = @At("HEAD"))
 	private void dividedchunks$rebuildOnVerticalDrift(CallbackInfo ci) {
 		if (CubeRenderWindow.needsRebuild()) {
+			CubeRenderWindow.recentre();
 			// allChanged also rebuilds the section dirty tracker, which is bounded by the window.
 			((net.minecraft.client.renderer.extract.LevelExtractor) (Object) this).allChanged();
 		}

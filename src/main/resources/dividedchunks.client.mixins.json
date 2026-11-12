@@ -9,6 +9,7 @@
   "mixins": [],
   "client": [
     "ChunkBorderRendererMixin",
+    "DebugEntryPositionMixin",
     "GraphStorageMixin",
     "LevelExtractorMixin",
     "LevelRendererMixin",

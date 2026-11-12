@@ -38,6 +38,11 @@ public class FabricGameTests {
 	}
 
 	@GameTest(structure = "minecraft:empty", maxTicks = 20)
+	public void largeFillStaysCheap(GameTestHelper helper) {
+		GameTests.largeFillStaysCheap(helper);
+	}
+
+	@GameTest(structure = "minecraft:empty", maxTicks = 20)
 	public void saveStoresWholeColumn(GameTestHelper helper) {
 		GameTests.saveStoresWholeColumn(helper);
 	}

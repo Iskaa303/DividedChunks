@@ -6,6 +6,7 @@ import net.iskaa303.dividedchunks.core.storage.CubeRegionStorage;
 import net.iskaa303.dividedchunks.core.world.ColumnSectionAccess;
 import net.iskaa303.dividedchunks.core.world.CubeStores;
 import net.iskaa303.dividedchunks.core.world.SectionCodec;
+import net.iskaa303.dividedchunks.network.CubeSync;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -19,6 +20,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
@@ -266,6 +268,42 @@ public final class GameTests {
 			throw helper.assertionException("a band block could not be set after the removal");
 		}
 		helper.succeed();
+	}
+
+	/**
+	 * A large out-of-band edit is sent once per section, not once per block: 6750 sets spanning two
+	 * sections queue two cubes.
+	 */
+	public static void largeFillStaysCheap(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		LevelChunk chunk = level.getChunk(740, 740);
+		int baseX = 740 * 16;
+		int baseZ = 740 * 16;
+		int baseY = 20000;
+		// Clear first, so the test does not depend on what an earlier run left in the world.
+		dividedchunks$fill(chunk, baseX, baseY, baseZ, Blocks.AIR.defaultBlockState());
+		CubeSync.flush(level);
+
+		dividedchunks$fill(chunk, baseX, baseY, baseZ, Blocks.STONE.defaultBlockState());
+		int sent = CubeSync.flush(level);
+		if (sent != 2) {
+			throw helper.assertionException("6750 block sets queued %s cubes, expected one per section".formatted(sent));
+		}
+		if (CubeSync.flush(level) != 0) {
+			throw helper.assertionException("a flushed level still had cubes queued");
+		}
+		helper.succeed();
+	}
+
+	/** 30x15x15 blocks: two sections, all inside one chunk. */
+	private static void dividedchunks$fill(LevelChunk chunk, int baseX, int baseY, int baseZ, BlockState state) {
+		for (int y = 0; y < 30; y++) {
+			for (int z = 0; z < 15; z++) {
+				for (int x = 0; x < 15; x++) {
+					chunk.setBlockState(new BlockPos(baseX + x, baseY + y, baseZ + z), state, 2);
+				}
+			}
+		}
 	}
 
 	private static void assertBlockLight(GameTestHelper helper, String what, ServerLevel level, int x, int y, int z,

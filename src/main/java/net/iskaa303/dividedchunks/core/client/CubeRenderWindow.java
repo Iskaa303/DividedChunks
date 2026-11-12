@@ -1,5 +1,6 @@
 package net.iskaa303.dividedchunks.core.client;
 
+import net.iskaa303.dividedchunks.DividedChunks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -35,7 +36,7 @@ public final class CubeRenderWindow {
 		}
 		debugCulled += culled;
 		if (now - debugWindowStart >= 1_000_000_000L) {
-			net.iskaa303.dividedchunks.DividedChunks.LOGGER.info(
+			DividedChunks.LOGGER.info(
 					"Cube cull: {} sections outside +-{} of section {} dropped this second", debugCulled, radius(),
 					cameraSectionY());
 			debugWindowStart = now;
@@ -117,6 +118,17 @@ public final class CubeRenderWindow {
 		}
 		// The Octree adds its own box height to this, so stay clear of the int limit.
 		return (int) Math.clamp((long) lastMinSectionY * 16, Integer.MIN_VALUE + 1024L, Integer.MAX_VALUE - 1024L);
+	}
+
+	/**
+	 * Recomputes the window around the player before a rebuild, so the rebuilt window is already the
+	 * current one and the next frame does not ask for a second rebuild of the same band.
+	 */
+	public static void recentre() {
+		int min = min();
+		if (DEBUG_CULL) {
+			DividedChunks.LOGGER.info("Cube window rebuilt around section {}", lastMinSectionY + height() / 2);
+		}
 	}
 
 	/** True once the player is close enough to a window edge that the cube would be cut off. */

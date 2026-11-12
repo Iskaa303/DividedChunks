@@ -48,6 +48,9 @@ public final class NeoforgeGameTests {
 				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "band_section_survives_cube_removal"),
 				new InlineGameTest(data, GameTests::bandSectionSurvivesCubeRemoval));
 		event.registerTest(
+				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "large_fill_stays_cheap"),
+				new InlineGameTest(data, GameTests::largeFillStaysCheap));
+		event.registerTest(
 				Identifier.fromNamespaceAndPath(DividedChunks.MOD_ID, "save_stores_whole_column"),
 				new InlineGameTest(data, GameTests::saveStoresWholeColumn));
 		event.registerTest(

@@ -110,7 +110,10 @@ classes, like vanilla's `LevelHeightAccessor`.
   the window; sections the player leaves are removed again, so a client only holds
   `verticalViewDistanceCubes` above and below itself. The window is recomputed when the player's
   section or chunk changes and otherwise once a second, which is also what drops the cubes of a
-  column that unloaded. Sections are read from the live column, so nothing waits on the store. Band
+  column that unloaded. Sections are read from the live column, so nothing waits on the store. Edits
+  are batched: a section touched by many block changes is sent once at the end of the tick, so a
+  `/fill` of 30 cubes costs a handful of payloads instead of one per block, and the window is only
+  rebuilt after two sections of vertical drift. Band
   sections are never sent as cubes: they arrive with the chunk packet, and a removal for one would
   leave vanilla's band array without a section. An edit outside a player's window is broadcast
   anyway, because the client's render window is taller than the sent one; that section then stays on

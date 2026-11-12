@@ -80,15 +80,10 @@ public abstract class LevelChunkMixin {
 		}
 
 		self.markUnsaved();
-		this.dividedchunks$broadcast(self, section, sectionY);
-		cir.setReturnValue(oldState);
-	}
-
-	@Unique
-	private void dividedchunks$broadcast(LevelChunk self, LevelChunkSection section, int sectionY) {
 		if (self.getLevel() instanceof ServerLevel serverLevel) {
-			CubeSync.broadcast(serverLevel, self.getPos(), sectionY, section);
+			CubeSync.markChanged(serverLevel, self.getPos(), sectionY);
 		}
+		cir.setReturnValue(oldState);
 	}
 
 	private boolean dividedchunks$inBand(LevelChunk self, int blockY) {

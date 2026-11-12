@@ -25,6 +25,9 @@ public final class CubeTracker {
 	/** Ticks between rescans while the player stands still, which picks up columns that unloaded. */
 	private static final int RESCAN_TICKS = 20;
 
+	/** Sections the player can drift before the window is worth rebuilding. */
+	private static final int DRIFT_SECTIONS = 2;
+
 	/** Cubes on the client, packed with {@link SectionPos#asLong(int, int, int)}. */
 	private final LongSet sent = new LongOpenHashSet();
 
@@ -45,11 +48,13 @@ public final class CubeTracker {
 		return Math.min(playerSectionY + half, Math.max(playerSectionY, maxSectionY));
 	}
 
-	/** Rescans once the player has moved to another section or column, and every second besides. */
+	/** Rescans once the player has drifted to another window, and every second besides. */
 	public void tick(ServerPlayer player, ServerLevel level) {
 		int sectionY = SectionPos.blockToSectionCoord(player.blockPosition().getY());
 		long chunkPos = player.chunkPosition().pack();
-		boolean moved = sectionY != this.lastSectionY || chunkPos != this.lastChunkPos;
+		boolean moved = this.lastSectionY == Integer.MIN_VALUE
+				|| Math.abs(sectionY - this.lastSectionY) >= DRIFT_SECTIONS
+				|| chunkPos != this.lastChunkPos;
 		if (!moved && ++this.idleTicks < RESCAN_TICKS) {
 			return;
 		}
