@@ -139,6 +139,7 @@ classes, like vanilla's `LevelHeightAccessor`.
 - `LevelLightEngine` / `SkyLightEngine` / `SkyLightSectionStorage` — cubic light.
 - `ChunkMap` / `ServerChunkCache` / `ChunkHolder` — 3D tickets.
 - `ClientChunkCache` / chunk packets — client cube cache.
+- `ChunkBorderRenderer` — the cube lattice behind vanilla's F3+G chunk-border overlay.
 - `SerializableChunkData` / `RegionFileStorage` — storage.
 - `ChunkGenerator` — worldgen.
 
