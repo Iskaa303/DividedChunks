@@ -2,6 +2,7 @@ package net.iskaa303.dividedchunks.mixin;
 
 import dev.kikugie.fletching_table.annotation.MixinIgnore;
 import net.iskaa303.dividedchunks.core.client.CubeRenderWindow;
+import net.iskaa303.dividedchunks.network.ClientCubeReceiver;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -57,6 +58,7 @@ public abstract class LevelRendererMixin {
 	//?} else {
 	/*@Inject(method = "cullTerrain", at = @At("HEAD"))
 	private void dividedchunks$rebuildOnVerticalDrift(CallbackInfo ci) {
+		ClientCubeReceiver.applyHeld(net.minecraft.client.Minecraft.getInstance().level);
 		if (CubeRenderWindow.needsRebuild()) {
 			CubeRenderWindow.recentre();
 			((LevelRenderer) (Object) this).allChanged();

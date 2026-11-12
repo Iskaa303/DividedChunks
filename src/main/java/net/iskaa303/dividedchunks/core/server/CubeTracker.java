@@ -79,6 +79,11 @@ public final class CubeTracker {
 		// Band sections arrive with the chunk packet; sending them as cubes duplicates them, and
 		// removing one later would leave vanilla's band array without a section at that index.
 		player.getChunkTrackingView().forEach(pos -> {
+			// A column whose chunk packet is still queued has no client copy yet, and the client drops a
+			// cube payload it cannot place, so this column waits for a later rescan.
+			if (player.connection.chunkSender.isPending(pos.pack())) {
+				return;
+			}
 			LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x(), pos.z());
 			if (chunk == null) {
 				return;

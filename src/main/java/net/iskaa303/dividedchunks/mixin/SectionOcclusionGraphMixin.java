@@ -2,13 +2,17 @@ package net.iskaa303.dividedchunks.mixin;
 
 import dev.kikugie.fletching_table.annotation.MixinIgnore;
 import net.iskaa303.dividedchunks.core.client.CubeRenderWindow;
+import net.iskaa303.dividedchunks.network.ClientCubeReceiver;
 import net.minecraft.client.renderer.Octree;
+import net.minecraft.client.renderer.SectionOcclusionGraph;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.SectionPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Drops the sections the occlusion Octree offers outside the vertical view distance: its box is a
@@ -17,6 +21,15 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @MixinIgnore
 @Mixin(targets = "net.minecraft.client.renderer.SectionOcclusionGraph")
 public abstract class SectionOcclusionGraphMixin {
+
+	/**
+	 * A cube that fills a section outside the vanilla band is invisible to vanilla, whose empty-section
+	 * set only changes when a chunk packet arrives, so the graph is told before it walks the octree.
+	 */
+	@Inject(method = "update", at = @At("HEAD"))
+	private void dividedchunks$cubeContentChanged(CallbackInfo ci) {
+		ClientCubeReceiver.applyContentChanges((SectionOcclusionGraph) (Object) this);
+	}
 
 	@Redirect(
 			method = "addSectionsInFrustum",
