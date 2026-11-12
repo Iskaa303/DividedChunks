@@ -46,12 +46,10 @@ public abstract class LightEngineMixin {
 		int index = (pos.getY() & 15) << 8 | (pos.getZ() & 15) << 4 | (pos.getX() & 15);
 		ColumnSectionAccess access = (ColumnSectionAccess) chunk;
 		if ((Object) this instanceof SkyLightEngine) {
-			// Vanilla reports full sky light out of band, so the column's value only ever lowers it.
-			if (cir.getReturnValue() != 15) {
-				return;
-			}
+			// Vanilla's out-of-band answer is a stored light section when one happens to be queued up there
+			// and full sky light otherwise, so both are replaced by the column's own value.
 			byte[] light = access.dividedchunks$skyLight(sectionY);
-			if (light != null && (light[index] & 0xFF) < cir.getReturnValue()) {
+			if (light != null) {
 				cir.setReturnValue((int) light[index]);
 			}
 		} else if ((Object) this instanceof BlockLightEngine) {
