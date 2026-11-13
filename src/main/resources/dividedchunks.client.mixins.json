@@ -18,6 +18,7 @@
     "SectionCopyMixin",
     "SectionOcclusionGraphMixin",
     "SectionUpdateTrackerMixin",
-    "ViewAreaMixin"
+    "ViewAreaMixin",
+    "WorldListEntryMixin"
   ]
 }

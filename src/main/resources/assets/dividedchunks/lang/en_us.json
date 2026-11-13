@@ -1,0 +1,9 @@
+{
+  "dividedchunks.world.kind.cubic": "Cubic world",
+  "dividedchunks.world.kind.vanilla": "Vanilla world",
+  "dividedchunks.convert.title": "Convert this world?",
+  "dividedchunks.convert.message": "A vanilla world cannot be opened by this mod until its chunks are converted. The converted world is a new copy; the original stays beside it with _non_cubic added to its folder name.",
+  "dividedchunks.convert.confirm": "Convert",
+  "dividedchunks.convert.cancel": "Cancel",
+  "dividedchunks.convert.failed": "Conversion failed"
+}
