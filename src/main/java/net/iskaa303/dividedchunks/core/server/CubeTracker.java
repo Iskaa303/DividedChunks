@@ -31,6 +31,9 @@ public final class CubeTracker {
 	/** Cubes on the client, packed with {@link SectionPos#asLong(int, int, int)}. */
 	private final LongSet sent = new LongOpenHashSet();
 
+	/** Columns whose sky occluder tops the client holds, packed with {@link ChunkPos#pack()}. */
+	private final LongSet topsSent = new LongOpenHashSet();
+
 	private int lastSectionY = Integer.MIN_VALUE;
 	private long lastChunkPos = Long.MIN_VALUE;
 	private int idleTicks;
@@ -74,6 +77,7 @@ public final class CubeTracker {
 		int maxSectionY = windowMax(playerSectionY, half, storedMax);
 
 		LongSet wanted = new LongOpenHashSet();
+		LongSet wantedTops = new LongOpenHashSet();
 		int bandMin = level.getMinSectionY();
 		int bandMax = level.getMaxSectionY();
 		// Band sections arrive with the chunk packet; sending them as cubes duplicates them, and
@@ -87,6 +91,10 @@ public final class CubeTracker {
 			LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x(), pos.z());
 			if (chunk == null) {
 				return;
+			}
+			// Tops are not windowed: a cube far above still shades the band below it.
+			if (CubeSync.hasOutOfBandTops(level, pos)) {
+				wantedTops.add(pos.pack());
 			}
 			((ColumnSectionAccess) chunk).dividedchunks$forEachSection((sectionY, section) -> {
 				if (sectionY >= minSectionY && sectionY <= maxSectionY && !section.hasOnlyAir()
@@ -106,12 +114,28 @@ public final class CubeTracker {
 				remove(level, player, key);
 			}
 		}
+		for (long column : wantedTops) {
+			if (!this.topsSent.contains(column)) {
+				CubeSync.sendTops(player, level, columnPosition(column));
+			}
+		}
+		for (long column : this.topsSent) {
+			if (!wantedTops.contains(column)) {
+				CubeSync.sendTops(player, level, columnPosition(column));
+			}
+		}
 		if (DEBUG) {
-			DividedChunks.LOGGER.info("Cube window around section {}: {} held, {} of them new", playerSectionY,
-					wanted.size(), wanted.size() - this.sent.size());
+			DividedChunks.LOGGER.info("Cube window around section {}: {} held, {} of them new, {} tops",
+					playerSectionY, wanted.size(), wanted.size() - this.sent.size(), wantedTops.size());
 		}
 		this.sent.clear();
 		this.sent.addAll(wanted);
+		this.topsSent.clear();
+		this.topsSent.addAll(wantedTops);
+	}
+
+	private static ChunkPos columnPosition(long packed) {
+		return new ChunkPos(ChunkPos.getX(packed), ChunkPos.getZ(packed));
 	}
 
 	private static void send(ServerLevel level, ServerPlayer player, long key) {

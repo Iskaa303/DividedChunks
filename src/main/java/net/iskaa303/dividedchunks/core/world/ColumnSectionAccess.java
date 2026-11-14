@@ -19,6 +19,9 @@ public interface ColumnSectionAccess {
 	/** Highest Y of a sky-damping block in the column at {@code localX}/{@code localZ}, or {@link Integer#MIN_VALUE}. */
 	int dividedchunks$skyOccluderTop(int localX, int localZ);
 
+	/** The 256 column tops the server computed for this column, or {@code null} to derive them locally. */
+	void dividedchunks$setSkyOccluderTops(int[] tops);
+
 	/**
 	 * Sky light of every block in the section at {@code sectionY}, indexed
 	 * {@code localY << 8 | localZ << 4 | localX}, or {@code null} for a chunk that has no level.

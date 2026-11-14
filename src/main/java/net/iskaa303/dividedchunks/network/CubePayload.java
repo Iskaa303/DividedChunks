@@ -6,7 +6,10 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-/** One out-of-band section, sent section by section; an empty {@code data} means remove it. */
+/**
+ * One out-of-band section, sent section by section; an empty {@code data} means remove it. A payload at
+ * {@link CubeSync#SKY_TOPS_Y} carries the column's sky occluder tops instead of a section.
+ */
 public record CubePayload(int chunkX, int sectionY, int chunkZ, byte[] data) implements CustomPacketPayload {
 
 	public static final Type<CubePayload> TYPE =

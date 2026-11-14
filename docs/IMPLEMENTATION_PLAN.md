@@ -85,6 +85,11 @@ classes, like vanilla's `LevelHeightAccessor`.
   every direction, so a change drops it for the column and its 8 neighbours instead. Light data is
   section-keyed and sparse like blocks, and an emitter-free section costs nothing (its cache entry
   is an all-zero array).
+- The band is vanilla-lit, except where a cube above it casts a shadow vanilla never sees: a sky
+  query in the band then takes the lower of vanilla's value and the column's own, computed from the
+  occluder tops down. Those tops travel separately from the sections, one payload per column with an
+  occluder above the band, so a roof 300 blocks up still shades the ground under it whether or not
+  its section is inside the vertical window. An edit re-sends the tops of its column.
 
 ### 3.5 Storage format (custom region files)
 

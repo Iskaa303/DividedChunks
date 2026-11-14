@@ -2,6 +2,7 @@ package net.iskaa303.dividedchunks.network;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.iskaa303.dividedchunks.DividedChunks;
+import net.iskaa303.dividedchunks.core.world.ChunkTags;
 import net.iskaa303.dividedchunks.core.world.ColumnSectionAccess;
 import net.iskaa303.dividedchunks.core.world.SectionCodec;
 import net.minecraft.client.Minecraft;
@@ -68,6 +69,10 @@ public final class ClientCubeReceiver {
 	private static void apply(ClientLevel level, CubePayload payload) {
 		LevelChunk chunk = level.getChunk(payload.chunkX(), payload.chunkZ());
 		ColumnSectionAccess access = (ColumnSectionAccess) chunk;
+		if (payload.sectionY() == CubeSync.SKY_TOPS_Y) {
+			applyTops(level, payload, access);
+			return;
+		}
 		if (payload.data().length == 0) {
 			access.dividedchunks$removeSection(payload.sectionY());
 			BECAME_FILLED.remove(SectionPos.asLong(payload.chunkX(), payload.sectionY(), payload.chunkZ()));
@@ -82,8 +87,37 @@ public final class ClientCubeReceiver {
 			DividedChunks.LOGGER.info("Applied cube {} {} {}: {} bytes", payload.chunkX(), payload.sectionY(),
 					payload.chunkZ(), payload.data().length);
 		}
+		// The section's light was computed against its earlier content, so it is dropped before the re-mesh.
+		access.dividedchunks$invalidateLightAround(payload.sectionY() << 4);
 		// A section that arrives after its render section was compiled has to be re-meshed.
 		level.setSectionDirtyWithNeighbors(payload.chunkX(), payload.sectionY(), payload.chunkZ());
+	}
+
+	/**
+	 * Takes the server's occluder tops for a column, which shade the band under a cube the client's own
+	 * section window does not reach, and re-meshes the column so the new shadow shows.
+	 */
+	private static void applyTops(ClientLevel level, CubePayload payload, ColumnSectionAccess access) {
+		int[] tops = payload.data().length == 0
+				? null
+				: ChunkTags.fromBytes(payload.data()).getIntArray("tops").orElse(null);
+		access.dividedchunks$setSkyOccluderTops(tops);
+		if (tops == null) {
+			return;
+		}
+		int highest = Integer.MIN_VALUE;
+		for (int top : tops) {
+			if (top != Integer.MIN_VALUE) {
+				highest = Math.max(highest, top);
+			}
+		}
+		if (highest == Integer.MIN_VALUE) {
+			return;
+		}
+		// Light only flows down, so every section at or below the highest top has a new value.
+		for (int sectionY = level.getMinSectionY(); sectionY <= SectionPos.blockToSectionCoord(highest); sectionY++) {
+			level.setSectionDirtyWithNeighbors(payload.chunkX(), sectionY, payload.chunkZ());
+		}
 	}
 
 	/**

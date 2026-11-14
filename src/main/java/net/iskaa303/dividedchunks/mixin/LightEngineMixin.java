@@ -18,8 +18,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Answers sky and block light outside the vanilla band, which vanilla stores no data for, from the
- * column's cached section light.
+ * Answers sky and block light from the column's own light, which is the only data that exists outside
+ * the vanilla band and the only one that knows about cubes above it.
  */
 @Mixin(LightEngine.class)
 public abstract class LightEngineMixin {
@@ -35,9 +35,7 @@ public abstract class LightEngineMixin {
 			return;
 		}
 		int sectionY = SectionPos.blockToSectionCoord(pos.getY());
-		if (sectionY >= level.getMinSectionY() && sectionY <= level.getMaxSectionY()) {
-			return;
-		}
+		boolean inBand = sectionY >= level.getMinSectionY() && sectionY <= level.getMaxSectionY();
 		LevelChunk chunk = level.getChunkSource()
 				.getChunkNow(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getZ()));
 		if (chunk == null) {
@@ -46,17 +44,22 @@ public abstract class LightEngineMixin {
 		int index = (pos.getY() & 15) << 8 | (pos.getZ() & 15) << 4 | (pos.getX() & 15);
 		ColumnSectionAccess access = (ColumnSectionAccess) chunk;
 		if ((Object) this instanceof SkyLightEngine) {
-			// Vanilla's out-of-band answer is a stored light section when one happens to be queued up there
-			// and full sky light otherwise, so both are replaced by the column's own value.
+			// In band vanilla is exact unless a cube above the band casts a shadow, which vanilla never sees.
+			if (inBand && access.dividedchunks$skyOccluderTop(pos.getX() & 15, pos.getZ() & 15) <= level.getMaxY()) {
+				return;
+			}
 			byte[] light = access.dividedchunks$skyLight(sectionY);
 			if (light != null) {
-				cir.setReturnValue((int) light[index]);
+				cir.setReturnValue(Math.min(cir.getReturnValue(), light[index] & 0xFF));
 			}
 		} else if ((Object) this instanceof BlockLightEngine) {
 			// Vanilla reports no block light out of band, so the column's value raises it.
+			if (inBand) {
+				return;
+			}
 			byte[] light = access.dividedchunks$blockLight(sectionY);
-			if (light != null && (light[index] & 0xFF) > cir.getReturnValue()) {
-				cir.setReturnValue((int) light[index]);
+			if (light != null) {
+				cir.setReturnValue(Math.max(cir.getReturnValue(), light[index] & 0xFF));
 			}
 		}
 	}

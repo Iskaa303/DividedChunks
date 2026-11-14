@@ -139,6 +139,13 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 	}
 
 	@Override
+	public void dividedchunks$setSkyOccluderTops(int[] tops) {
+		// The server sees every stored section of the column, the client only the cubes around it.
+		this.dividedchunks$skyTops = tops;
+		this.dividedchunks$skyLight.clear();
+	}
+
+	@Override
 	public void dividedchunks$invalidateLightAround(int blockY) {
 		this.dividedchunks$invalidateSkyFrom(blockY);
 		this.dividedchunks$emitters = null;
@@ -183,10 +190,10 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 		Level level = chunk.getLevel();
 		int reach = SkyLight.blocksPerLevel(
 				DividedChunks.config().forDimension(level.dimension().identifier().toString()).skyConeAngleDegrees);
-		// Light only flows down, so every stored section above has to be lit first: walking the run
-		// from its top does that in one pass, without recursion and without a depth limit.
+		// Light only flows down, so starting at the highest occluder and walking every section below it
+		// lights the whole column in one pass; sections in between are air and pass light on.
 		byte[] above = null;
-		for (int y = this.dividedchunks$storedRunTop(sectionY); y >= sectionY; y--) {
+		for (int y = Math.max(sectionY, this.dividedchunks$highestOccluderSection()); y >= sectionY; y--) {
 			byte[] previous = above;
 			above = this.dividedchunks$skyLight.get(y, requested -> SkyLight.compute(
 					chunk.getPos().getMinBlockX(), chunk.getPos().getMinBlockZ(), requested << 4, reach,
@@ -196,14 +203,18 @@ public abstract class ChunkAccessMixin implements ColumnSectionAccess {
 		return above;
 	}
 
-	/** Highest section at or above {@code sectionY} with no unstored section between it and this one. */
+	/** Section holding the column's highest occluding block, or {@link Integer#MIN_VALUE} without one. */
 	@Unique
-	private int dividedchunks$storedRunTop(int sectionY) {
-		int top = sectionY;
-		while (this.dividedchunks$sections.get(top + 1) != null) {
-			top++;
+	private int dividedchunks$highestOccluderSection() {
+		int[] tops = this.dividedchunks$skyTops;
+		if (tops == null) {
+			tops = this.dividedchunks$skyTops = this.dividedchunks$computeSkyTops();
 		}
-		return top;
+		int top = Integer.MIN_VALUE;
+		for (int value : tops) {
+			top = Math.max(top, value);
+		}
+		return top == Integer.MIN_VALUE ? top : SectionPos.blockToSectionCoord(top);
 	}
 
 	@Override
