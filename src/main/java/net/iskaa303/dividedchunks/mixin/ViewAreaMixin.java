@@ -1,6 +1,7 @@
 package net.iskaa303.dividedchunks.mixin;
 
 import dev.kikugie.fletching_table.annotation.MixinIgnore;
+import net.iskaa303.dividedchunks.core.client.BandRotation;
 import net.iskaa303.dividedchunks.core.client.CubeRenderWindow;
 //? if >=26.2 {
 import net.minecraft.client.RotatingSectionStorage;
@@ -18,9 +19,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Gives the dense ViewArea a windowed vertical band: built as a constructor argument from 26.2, and
- * redirected into the grid by hand below it. From 26.2 the band also reports its current block bounds,
- * which move with the camera because the band rotates.
+ * Rotates the vertical band of the render grid so it follows the camera, instead of building a new grid,
+ * which drops every compiled section. Below 26.2 the band is also injected into the level's section
+ * bounds, which is where that grid reads its vertical extent from.
  */
 @MixinIgnore
 @Mixin(ViewArea.class)
@@ -30,8 +31,20 @@ public abstract class ViewAreaMixin {
 	/*@Shadow
 	protected int sectionGridSizeY;
 
+	@Shadow
+	protected int sectionGridSizeX;
+
+	@Shadow
+	private int viewDistance;
+
+	@Shadow
+	public net.minecraft.client.renderer.chunk.SectionRenderDispatcher.RenderSection[] sections;
+
 	@Unique
 	private int dividedchunks$windowMin;
+
+	@Unique
+	private static final boolean DEBUG = Boolean.getBoolean("dividedchunks.debugRender");
 
 	@Inject(method = "setViewDistance", at = @At("RETURN"))
 	private void dividedchunks$window(int renderDistance, CallbackInfo ci) {
@@ -41,6 +54,26 @@ public abstract class ViewAreaMixin {
 		}
 		this.dividedchunks$windowMin = min;
 		this.sectionGridSizeY = CubeRenderWindow.height();
+	}
+
+	@Inject(method = "repositionCamera", at = @At("HEAD"))
+	private void dividedchunks$followBand(net.minecraft.core.SectionPos cameraSectionPos, CallbackInfo ci) {
+		int height = this.sectionGridSizeY;
+		// Room for the drawn cube at both ends, so the band moves in steps instead of every section.
+		int margin = Math.max(this.viewDistance, height / 4);
+		int sectionY = cameraSectionPos.y();
+		if (this.dividedchunks$windowMin == Integer.MIN_VALUE
+				|| (sectionY >= this.dividedchunks$windowMin + margin
+						&& sectionY <= this.dividedchunks$windowMin + height - 1 - margin)) {
+			return;
+		}
+		int newMin = sectionY - height / 2;
+		BandRotation.rotate(this.sections, height, this.sectionGridSizeX, newMin - this.dividedchunks$windowMin);
+		if (DEBUG) {
+			net.iskaa303.dividedchunks.DividedChunks.LOGGER.info("Band rotated to sections {}..{}", newMin,
+					newMin + height - 1);
+		}
+		this.dividedchunks$windowMin = newMin;
 	}
 
 	@Redirect(method = "createSections", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getMinSectionY()I"))

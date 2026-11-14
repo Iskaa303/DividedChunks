@@ -18,8 +18,6 @@ public final class CubeRenderWindow {
 
 	private static int lastMinSectionY = Integer.MIN_VALUE;
 	private static int lastMaxSectionY = Integer.MIN_VALUE;
-	/** The band the render grid was built with, or {@code null} before the first build. */
-	private static CubeWindow current;
 	private static long debugWindowStart;
 	private static int debugCulled;
 
@@ -61,16 +59,16 @@ public final class CubeRenderWindow {
 		return center(level);
 	}
 
-	/** Lower bound of the window for the player's bucket, recording it; {@code MIN_VALUE} without a level. */
+	/** Lower bound of the band for the player's section, recording it; {@code MIN_VALUE} without a level. */
 	public static int min() {
 		ClientLevel level = Minecraft.getInstance().level;
 		if (level == null) {
 			return Integer.MIN_VALUE;
 		}
-		current = CubeWindow.around(center(level), radius());
-		lastMinSectionY = current.min();
-		lastMaxSectionY = current.max();
-		return current.min();
+		CubeWindow window = CubeWindow.around(center(level), radius());
+		lastMinSectionY = window.min();
+		lastMaxSectionY = window.max();
+		return window.min();
 	}
 
 	private static int center(ClientLevel level) {
@@ -114,26 +112,5 @@ public final class CubeRenderWindow {
 		}
 		// The Octree adds its own box height to this, so stay clear of the int limit.
 		return (int) Math.clamp((long) lastMinSectionY * 16, Integer.MIN_VALUE + 1024L, Integer.MAX_VALUE - 1024L);
-	}
-
-	/**
-	 * Recomputes the window for the player's current bucket before a rebuild, so the rebuilt window is
-	 * already the current one and the next frame does not ask for a second rebuild of the same band.
-	 */
-	public static void recentre() {
-		min();
-		if (DEBUG_CULL && current != null) {
-			DividedChunks.LOGGER.info("Cube window rebuilt: sections {}..{}", current.min(), current.max());
-		}
-	}
-
-	/** True once the player has left the bucket the window was built for. */
-	public static boolean needsRebuild() {
-		ClientLevel level = Minecraft.getInstance().level;
-		LocalPlayer player = Minecraft.getInstance().player;
-		if (level == null || player == null || current == null) {
-			return false;
-		}
-		return !current.holds(SectionPos.blockToSectionCoord(player.blockPosition().getY()));
 	}
 }

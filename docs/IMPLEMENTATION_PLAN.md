@@ -153,9 +153,9 @@ classes, like vanilla's `LevelHeightAccessor`.
 - `LevelLightEngine` / `SkyLightEngine` / `SkyLightSectionStorage` — cubic light.
 - `ChunkMap` / `ServerChunkCache` / `ChunkHolder` — 3D tickets.
 - `ClientChunkCache` / chunk packets — client cube cache.
-- `ViewArea` / `RotatingSectionStorage` - from 26.2 the vertical band follows the camera by
-  rotating the storage rows in place, so a band move keeps every mesh that stays in the band and
-  only re-points the rows that wrap, instead of rebuilding the whole render grid.
+- `ViewArea` / `RotatingSectionStorage` - the vertical band follows the camera by rotating the grid
+  rows in place, so a band move keeps every mesh that stays in the band and only re-points the rows
+  that wrap, instead of rebuilding the whole render grid.
 - `ChunkBorderRenderer` / `RenderTypes` / `RenderPipelines` — replaces vanilla's F3+G chunk-border
   overlay with the same line set drawn over cubes instead of one chunk: vanilla's red 3x3 lattice,
   its major-line blue on the camera chunk's corners, its cell teal on the cube boundaries, and its

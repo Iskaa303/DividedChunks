@@ -57,12 +57,8 @@ public abstract class LevelRendererMixin {
 	}
 	//?} else {
 	/*@Inject(method = "cullTerrain", at = @At("HEAD"))
-	private void dividedchunks$rebuildOnVerticalDrift(CallbackInfo ci) {
+	private void dividedchunks$applyHeldCubes(CallbackInfo ci) {
 		ClientCubeReceiver.applyHeld(net.minecraft.client.Minecraft.getInstance().level);
-		if (CubeRenderWindow.needsRebuild()) {
-			CubeRenderWindow.recentre();
-			((LevelRenderer) (Object) this).allChanged();
-		}
 	}
 	*///?}
 }
