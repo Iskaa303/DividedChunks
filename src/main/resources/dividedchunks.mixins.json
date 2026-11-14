@@ -11,6 +11,7 @@
     "ChunkHolderMixin",
     "FriendlyByteBufMixin",
     "LevelChunkMixin",
+    "PlayerChunkSenderMixin",
     "LevelMixin",
     "MinecraftServerMixin",
     "ServerLevelMixin",

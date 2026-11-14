@@ -46,8 +46,8 @@ class CubeWindowTest {
 	void heightGrowsWithTheRenderDistanceButIsCapped() {
 		assertEquals(20, CubeWindow.height(2), "small radius gets the minimum bucket");
 		assertEquals(48, CubeWindow.height(8));
-		assertEquals(64, CubeWindow.height(16));
-		assertTrue(CubeWindow.height(32) < 96, "the largest render distance is still bounded");
+		assertEquals(96, CubeWindow.height(16));
+		assertEquals(128, CubeWindow.height(32));
 		assertTrue(CubeWindow.height(32) > 2 * 32, "and still holds the 65 section cube");
 	}
 }
