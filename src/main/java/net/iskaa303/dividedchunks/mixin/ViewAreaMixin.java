@@ -2,8 +2,12 @@ package net.iskaa303.dividedchunks.mixin;
 
 import dev.kikugie.fletching_table.annotation.MixinIgnore;
 import net.iskaa303.dividedchunks.core.client.CubeRenderWindow;
+//? if >=26.2 {
+import net.minecraft.client.RotatingSectionStorage;
+//?}
 import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.world.level.Level;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -11,10 +15,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Gives the dense ViewArea a windowed vertical band. Only the 26.1.2 renderer needs this; from
- * 26.2 the band is a constructor argument handled in LevelRendererMixin.
+ * Gives the dense ViewArea a windowed vertical band: built as a constructor argument from 26.2, and
+ * redirected into the grid by hand below it. From 26.2 the band also reports its current block bounds,
+ * which move with the camera because the band rotates.
  */
 @MixinIgnore
 @Mixin(ViewArea.class)
@@ -62,4 +68,20 @@ public abstract class ViewAreaMixin {
 		return this.dividedchunks$windowMin + this.sectionGridSizeY - 1;
 	}
 	*///?}
+
+	//? if >=26.2 {
+	@Shadow
+	@Final
+	private RotatingSectionStorage<?> sections;
+
+	@Inject(method = "minY", at = @At("RETURN"), cancellable = true)
+	private void dividedchunks$bandMinBlockY(CallbackInfoReturnable<Integer> cir) {
+		cir.setReturnValue(this.sections.minY() << 4);
+	}
+
+	@Inject(method = "maxY", at = @At("RETURN"), cancellable = true)
+	private void dividedchunks$bandMaxBlockY(CallbackInfoReturnable<Integer> cir) {
+		cir.setReturnValue((this.sections.maxY() << 4) + 15);
+	}
+	//?}
 }

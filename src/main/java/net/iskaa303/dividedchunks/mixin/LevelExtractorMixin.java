@@ -1,7 +1,6 @@
 package net.iskaa303.dividedchunks.mixin;
 
 import dev.kikugie.fletching_table.annotation.MixinIgnore;
-import net.iskaa303.dividedchunks.core.client.CubeRenderWindow;
 import net.iskaa303.dividedchunks.network.ClientCubeReceiver;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,13 +19,8 @@ public abstract class LevelExtractorMixin {
 	private net.minecraft.client.multiplayer.ClientLevel level;
 
 	@Inject(method = "extract", at = @At("HEAD"))
-	private void dividedchunks$rebuildOnVerticalDrift(CallbackInfo ci) {
+	private void dividedchunks$applyHeldCubes(CallbackInfo ci) {
 		ClientCubeReceiver.applyHeld(this.level);
-		if (CubeRenderWindow.needsRebuild()) {
-			CubeRenderWindow.recentre();
-			// allChanged also rebuilds the section dirty tracker, which is bounded by the window.
-			((net.minecraft.client.renderer.extract.LevelExtractor) (Object) this).allChanged();
-		}
 	}
 }
 //?} else {
